@@ -13,6 +13,8 @@ class CellsGrid(QtWidgets.QFrame):
     def __init__(self, row_count: int, column_count: int):
         super().__init__()
 
+        self.setObjectName('cell_grid')
+
         self.layout = QtWidgets.QGridLayout(self)
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.setFrameStyle(QtWidgets.QFrame.Plain)
@@ -34,7 +36,9 @@ class CellsGrid(QtWidgets.QFrame):
 
     @QtCore.Slot(Cell.Cell)
     def _selection_end_handler(self, cell: Cell.Cell, pos: QtCore.QPointF) -> None:
-        selection_end_cell = self._get_cell_from_pos(pos)
+        inner_top_left = self.mapToGlobal(QtCore.QPoint(0, 0))
+        selection_end_cell = self._get_cell_from_pos(
+            QtCore.QPoint(pos.x() - inner_top_left.x(), pos.y() - inner_top_left.y()))
         selection_start_grid_coord = self._get_cell_grid_coordinates(cell)
         selection_end_grid_coord = self._get_cell_grid_coordinates(selection_end_cell)
         self._toggle_multiple_cells(selection_start_grid_coord, selection_end_grid_coord)
