@@ -1,13 +1,12 @@
-from collections import namedtuple
 import sys
-from typing import Tuple
-from PySide6 import QtCore, QtWidgets, QtGui
+from PySide6 import QtCore, QtWidgets
 
 from .components import CellsGrid
 
 class App(QtWidgets.QMainWindow):
     GRID_ROWS = 30
     GRID_COLUMNS = 30
+
 
     def __init__(self):
         super().__init__()
@@ -16,7 +15,7 @@ class App(QtWidgets.QMainWindow):
         # self.addToolBar(QtWidgets.QToolBar(self))
 
         self.setWindowTitle('Floor Cleaning Map Tool')
-        self.setCentralWidget(CellsGrid.CellsGrid(App.GRID_ROWS, App.GRID_COLUMNS))
+        self._create_grid()
         self._attach_menu()
 
         # self.layout = QtWidgets.QVBoxLayout(self)
@@ -24,10 +23,29 @@ class App(QtWidgets.QMainWindow):
         # self.layout.setSpacing(0)
         # self.layout.addWidget()
 
+
+    def _create_grid(self):
+        self.setCentralWidget(CellsGrid.CellsGrid(App.GRID_ROWS, App.GRID_COLUMNS))
+
+
     def _attach_menu(self):
-        menu = QtWidgets.QMenu(self)
-        menu.addAction('test')
-        self.menuBar().addMenu('&File')
+        # file menu
+        fileMenu = self.menuBar().addMenu('&File')
+        newAction = fileMenu.addAction('&New grid')
+        newAction.triggered.connect(self._new_grid)
+
+        exitAction = fileMenu.addAction('&Exit')
+        exitAction.triggered.connect(self._exit)
+
+
+    @QtCore.Slot()
+    def _new_grid(self) -> None:
+        self._create_grid()
+
+
+    @QtCore.Slot()
+    def _exit(self) -> None:
+        self.close()
 
 
 if __name__ == "__main__":

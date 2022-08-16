@@ -1,7 +1,5 @@
 from collections import namedtuple
-import sys
-from typing import Tuple
-from PySide6 import QtCore, QtWidgets, QtGui
+from PySide6 import QtCore, QtWidgets
 
 from main.components import Cell
 
@@ -9,6 +7,7 @@ GridCoord = namedtuple('GridCoord', ['x', 'y'])
 
 class CellsGrid(QtWidgets.QFrame):
     selection_end = QtCore.Signal(Cell.Cell, QtCore.QPointF)
+
 
     def __init__(self, row_count: int, column_count: int):
         super().__init__()
@@ -34,6 +33,7 @@ class CellsGrid(QtWidgets.QFrame):
 
         self.selection_end.connect(self._selection_end_handler)
 
+
     @QtCore.Slot(Cell.Cell)
     def _selection_end_handler(self, cell: Cell.Cell, pos: QtCore.QPointF) -> None:
         inner_top_left = self.mapToGlobal(QtCore.QPoint(0, 0))
@@ -43,16 +43,19 @@ class CellsGrid(QtWidgets.QFrame):
         selection_end_grid_coord = self._get_cell_grid_coordinates(selection_end_cell)
         self._toggle_multiple_cells(selection_start_grid_coord, selection_end_grid_coord)
 
+
     # get Cell object from position
     def _get_cell_from_pos(self, pos: QtCore.QPoint) -> Cell.Cell:
         return next(cell for row in self.cells 
             for cell in row if cell.is_point_inside(pos))
+
 
     # get coordinates of the target cell in the grid
     def _get_cell_grid_coordinates(self, target_cell: Cell.Cell) -> GridCoord:
         grid_coord_raw = next((ir, ic) for ir, row in enumerate(self.cells)
             for ic, cell in enumerate(row) if cell is target_cell)
         return GridCoord(x=grid_coord_raw[1], y=grid_coord_raw[0])
+
 
     def _toggle_multiple_cells(self, 
             grid_coord1: GridCoord, 
