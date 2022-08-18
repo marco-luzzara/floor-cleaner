@@ -1,6 +1,9 @@
 import sys
 from PySide6 import QtCore, QtWidgets
 
+from main.components.mapping import MapManager
+from main.util import MsgBoxUtil
+
 from .components import CellsGrid, SendMapDialog
 
 
@@ -23,14 +26,19 @@ class App(QtWidgets.QMainWindow):
     def _attach_menu(self):
         # file menu
         fileMenu = self.menuBar().addMenu('&File')
-        newAction = fileMenu.addAction('&New grid')
-        newAction.triggered.connect(self._new_grid)
+        actionNew = fileMenu.addAction('&New grid')
+        actionNew.triggered.connect(self._new_grid)
 
-        sendAction = fileMenu.addAction('&Send')
-        sendAction.triggered.connect(self._send)
+        actionSend = fileMenu.addAction('&Send')
+        actionSend.triggered.connect(self._send)
 
-        exitAction = fileMenu.addAction('&Exit')
-        exitAction.triggered.connect(self._exit)
+        actionExit = fileMenu.addAction('&Exit')
+        actionExit.triggered.connect(self._exit)
+
+        # robot menu
+        cleanerMenu = self.menuBar().addMenu('&Cleaner')
+        actionPlaceCleaner = cleanerMenu.addAction('&Place Cleaner')
+        actionPlaceCleaner.triggered.connect(self._place_cleaner)
 
     @QtCore.Slot()
     def _new_grid(self) -> None:
@@ -43,7 +51,17 @@ class App(QtWidgets.QMainWindow):
     @QtCore.Slot()
     def _send(self) -> None:
         dialog_send = SendMapDialog.SendMapDialog(self, self.centralWidget())
-        result = dialog_send.exec()
+        sendResult = dialog_send.exec()
+
+        if sendResult == QtWidgets.QDialog.DialogCode.Accepted:
+            MsgBoxUtil.MsgBoxUtil.info_box('Send successful')
+
+    @QtCore.Slot()
+    def _place_cleaner(self) -> None:
+        cellsGrid: CellsGrid.CellsGrid = self.centralWidget()
+        cellsGrid.start_cells_cleaner_positioning()
+
+        MsgBoxUtil.MsgBoxUtil.info_box('Place the cleaner by clicking on a cell')
 
 
 if __name__ == "__main__":
