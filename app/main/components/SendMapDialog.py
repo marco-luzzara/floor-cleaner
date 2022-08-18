@@ -1,9 +1,11 @@
 from PySide6 import QtCore, QtWidgets, QtGui
 from serial.tools import list_ports
 
+from main.components.mapping import MapManager
+
 
 class SendMapDialog(QtWidgets.QDialog):
-    def __init__(self, parent: QtWidgets.QWidget, grid_widget: QtWidgets.QWidget):
+    def __init__(self, parent: QtWidgets.QWidget, grid_widget: MapManager.MapManager):
         super().__init__(parent=parent)
         self.setObjectName('serial_id_dialog')
         self.setWindowTitle('Choose Serial port')
@@ -30,6 +32,7 @@ class SendMapDialog(QtWidgets.QDialog):
         self.layout().addWidget(self._button_cancel)
 
     def accept(self) -> None:
+        print(list(map(lambda row: list(row), self._grid_widget.get_map())))
         serial_info = self._combo_box_serial.currentData()
 
         super().accept()
