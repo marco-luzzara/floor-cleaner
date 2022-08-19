@@ -1,5 +1,6 @@
-from PySide6 import QtCore, QtWidgets, QtGui
-from serial.tools import list_ports
+from PySide6 import QtWidgets
+import serial
+from serial.tools import list_ports, list_ports_common
 
 from main.components.mapping import MapManager
 
@@ -15,9 +16,9 @@ class SendMapDialog(QtWidgets.QDialog):
 
         # combobox serial config
         self._combo_box_serial = QtWidgets.QComboBox()
-        for i, serial_port in enumerate(list_ports.comports()):
+        for i, serial_data in enumerate(list_ports.comports()):
             self._combo_box_serial.insertItem(
-                i, serial_port.description, userData=serial_port)
+                i, serial_data.description, userData=serial_data)
 
         # button send config
         self._button_send = QtWidgets.QPushButton('Send')
@@ -32,7 +33,19 @@ class SendMapDialog(QtWidgets.QDialog):
         self.layout().addWidget(self._button_cancel)
 
     def accept(self) -> None:
-        print(list(map(lambda row: list(row), self._grid_widget.get_map())))
-        serial_info = self._combo_box_serial.currentData()
+        cleaning_map = list(map(lambda row: list(row), self._grid_widget.get_map()))
+        serial_data: list_ports_common.ListPortInfo = self._combo_box_serial.currentData()
+        with serial.Serial(port=serial_data.device, baudrate=9600) as cleaner_serial:
+            cleaner_serial.write(b'&')
+            cleaner_serial.write(bytes(str(len(cleaning_map)), encoding='ascii'))
+            cleaner_serial.write(b'|')
+            cleaner_serial.write(bytes(str(len(cleaning_map[0])), encoding='ascii'))
+            cleaner_serial.write(b'|')
+
+            for row in cleaning_map:
+                for cell in row:
+                    cleaner_serial.write(bytes(str(cell.value), encoding='ascii'))
+            
+            cleaner_serial.write(b'&')
 
         super().accept()
