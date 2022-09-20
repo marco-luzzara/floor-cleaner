@@ -1,3 +1,3 @@
-map_reader.c:7:6:read_char	32	static
-map_reader.c:18:5:read_number	40	static
-map_reader.c:34:11:get_map	56	static
+map_reader.c:8:6:read_char	32	static
+map_reader.c:19:5:read_number	40	static
+map_reader.c:35:9:get_map	56	static
