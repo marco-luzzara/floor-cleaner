@@ -1,11 +1,11 @@
 #include <stdlib.h>
+#include <types/map.h>
 #include "stm32l0xx_hal.h"
-#include "types/map_types.h"
 
 /*
  * @brief read a single char from uart
  */
-char read_char(UART_HandleTypeDef *huart) {
+static char read_char(UART_HandleTypeDef *huart) {
 	char c;
 	HAL_UART_Receive(huart, (uint8_t*)&c, 1, HAL_MAX_DELAY);
 
@@ -16,7 +16,7 @@ char read_char(UART_HandleTypeDef *huart) {
  * @brief read characters until '|' is found. returns the int representing
  * the sequence of chars
  */
-int read_number(UART_HandleTypeDef *huart) {
+static int read_number(UART_HandleTypeDef *huart) {
 	char num[] = { '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0' };
 	uint8_t index = 0;
 	char token;
@@ -32,7 +32,7 @@ int read_number(UART_HandleTypeDef *huart) {
 	return atoi(num);
 }
 
-MapInfo get_map(UART_HandleTypeDef *huart) {
+void initialize_map(UART_HandleTypeDef *huart, MapInfo* mapInfo) {
 	char c;
 	do {
 		c = read_char(huart);
@@ -56,12 +56,9 @@ MapInfo get_map(UART_HandleTypeDef *huart) {
 	// should read flow terminator '&'
 	read_char(huart);
 
-	MapInfo mapInfo;
-	mapInfo.row_count = row_count;
-	mapInfo.column_count = column_count;
-	mapInfo.map = map;
-
-	return mapInfo;
+	mapInfo->row_count = row_count;
+	mapInfo->column_count = column_count;
+	mapInfo->map = map;
 }
 
 

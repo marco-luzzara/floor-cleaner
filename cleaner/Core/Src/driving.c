@@ -5,9 +5,10 @@
  *      Author: maluz
  */
 
+#include <types/map.h>
 #include "stm32l0xx_hal.h"
 #include "types/motors.h"
-#include "types/map_types.h"
+#include "types/cleaner.h"
 
 // TODO: set based on motor rpm
 int millis_to_turn = 1000;
@@ -17,9 +18,23 @@ int start_drive(MapInfo* mapInfo, MotorsInfo* motorsInfo) {
 	return 0;
 }
 
-MapPosition get_cleaner_position(MapInfo* mapInfo) {
-	MapPosition mapPosition;
-	return mapPosition;
+/*
+ * @brief find the current position of the cleaner, if present. direction is assumed UP
+ */
+bool find_cleaner(MapInfo* mapInfo, CleanerInfo* cleanerInfo) {
+	for (int r = 0; r < mapInfo->row_count; r++) {
+		for (int c = 0; c < mapInfo->column_count; c++) {
+			if (mapInfo->map[r][c] == CLEANER_POS) {
+				cleanerInfo->direction = UP;
+				cleanerInfo->position.row = r;
+				cleanerInfo->position.col = c;
+
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 

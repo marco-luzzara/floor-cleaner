@@ -24,6 +24,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "map_reader.h"
+#include "types/map.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -106,8 +107,10 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-  	int row_count, column_count;
-  	uint8_t** map = get_map(&huart2, &row_count, &column_count);
+  	MapInfo mapInfo;
+  	initialize_map(&huart2, &mapInfo);
+
+  	// remember dealloc
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

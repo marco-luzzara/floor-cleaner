@@ -6,7 +6,7 @@
  * @retval 0 - the cleaner completed the cleaning process
  * 				 1 - otherwise
  */
-int start_drive(uint8_t** map, MotorsInfo* motorsInfo);
+int start_drive(MapInfo* mapInfo, MotorsInfo* motorsInfo);
 
 /**
  * @brief signals that the cleaner has finished its work
