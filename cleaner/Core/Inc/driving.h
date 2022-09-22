@@ -4,9 +4,9 @@
 /**
  * @brief starts to drive
  * @retval 0 - the cleaner completed the cleaning process
- * 				 1 - otherwise
+ * 				 1 - cleaner not found
  */
-int start_drive(MapInfo* mapInfo, MotorsInfo* motorsInfo);
+int start_drive(const MapInfo* mapInfo, const MotorsInfo* motorsInfo);
 
 /**
  * @brief signals that the cleaner has finished its work
@@ -18,16 +18,16 @@ void end_drive();
  * @retval 0 - the cleaner reached the destination
  * 				 1 - an obstacle has been found, the cleaner returned to the initial position
  */
-int drive_forward(int millisToDrive, int* obstacleFound, MotorsInfo* motorsInfo);
+int drive_forward(const int* obstacleFound, const MotorsInfo* motorsInfo);
 
 /**
  * @brief rotate the cleaner by 90° anti-clockwise
  */
-void turn_left(MotorsInfo* motorsInfo);
+void turn_left(const MotorsInfo* motorsInfo);
 
 /**
  * @brief rotate the cleaner by 90° clockwise
  */
-void turn_right(MotorsInfo* motorsInfo);
+void turn_right(const MotorsInfo* motorsInfo);
 
 #endif /* INC_DRIVING_H_ */
