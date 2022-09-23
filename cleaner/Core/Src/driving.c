@@ -20,42 +20,41 @@ static bool find_first_around_cell(const MapPosition* start,
 																	 const MapInfo* mapInfo,
 																	 MapPosition* target,
 																	 bool (*condition)(const MapInfo*, const MapPosition*));
-static void find_initial_position(const MapInfo* mapInfo,
-																  const MapPosition* start_position,
-																	const MapPosition* nearest_unavailable,
+static bool find_start_position(const MapInfo* mapInfo,
 																  MapPosition* target_position);
 
 int start_drive(const MapInfo* mapInfo,
 								const MotorsInfo* motorsInfo,
 								const CleanComponentsInfo* cleanComponentsInfo) {
 	CleanerInfo cleanerInfo;
-	bool cleaner_found = find_cleaner(mapInfo, &cleanerInfo);
-
-	if (!cleaner_found)
+	bool is_cleaner_found = find_cleaner(mapInfo, &cleanerInfo);
+	if (!is_cleaner_found)
 		return 1;
 
-	MapPosition target_start_position;
-	MapPosition nearest_unavailable;
-	bool are_any_unavailable = find_first_around_cell(&cleanerInfo.position, mapInfo, &nearest_unavailable,
-			lambda(bool, (const MapInfo* mapInfo, const MapPosition* cur_cell), {
-				return mapInfo->map[cur_cell->row][cur_cell->col] == UNAVAILABLE;
-			}));
-
-	find_initial_position(mapInfo, &cleanerInfo.position,
-			are_any_unavailable ? &nearest_unavailable : NULL,
-			&target_start_position);
+	MapPosition start_position;
+	bool is_start_cell_found = find_start_position(mapInfo, &start_position);
+	if (!is_start_cell_found)
+		return 2;
 
 	return 0;
 }
 
-static void find_initial_position(const MapInfo* mapInfo,
-																  const MapPosition* start_position,
-																	const MapPosition* nearest_unavailable,
-																  MapPosition* target_position) {
-	// there is no unavailable cell, all must be clea
-	if (nearest_unavailable == NULL) {
-		//find_first_around_cell(start, mapInfo, target, condition)
+/*
+ * @brief the starting position is the cell 0,0 if TO_CLEAN or the nearest to it
+ */
+static bool find_start_position(const MapInfo* mapInfo, MapPosition* target_position) {
+	MapPosition up_left_corner = { .row = 0, .col = 0 };
+	if (mapInfo->map[up_left_corner.row][up_left_corner.col] == TO_CLEAN) {
+		*target_position = up_left_corner;
+		return true;
 	}
+
+	bool is_cell_to_clean_found = find_first_around_cell(&up_left_corner, mapInfo, target_position,
+				lambda(bool, (const MapInfo* mapInfo, const MapPosition* cur_cell), {
+					return mapInfo->map[cur_cell->row][cur_cell->col] == TO_CLEAN;
+				}));
+
+	return is_cell_to_clean_found;
 }
 
 static bool visit_boundary_for_search(const MapInfo* mapInfo,
