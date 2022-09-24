@@ -30,4 +30,16 @@ typedef struct MapInfo {
 	uint16_t column_count;
 } MapInfo;
 
+inline bool is_row_valid(const MapInfo* mapInfo, uint16_t row) {
+	return row >= 0 && row < mapInfo->row_count;
+}
+
+inline bool is_column_valid(const MapInfo* mapInfo, uint16_t column) {
+	return column >= 0 && column < mapInfo->column_count;
+}
+
+inline bool is_cell_valid(const MapInfo* mapInfo, const MapPosition* cell) {
+	return is_row_valid(mapInfo, cell->row) && is_column_valid(mapInfo, cell->col);
+}
+
 #endif /* INC_TYPES_MAP_H_ */

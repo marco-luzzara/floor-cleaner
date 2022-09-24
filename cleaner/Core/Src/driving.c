@@ -10,6 +10,7 @@
 #include "stm32l0xx_hal.h"
 #include "types/cleaner.h"
 #include "types/utils.h"
+#include "algorithm/shortest_path.h"
 
 // TODO: set based on motor rpm
 int millis_to_turn = 1000;
@@ -22,6 +23,9 @@ static bool find_first_around_cell(const MapPosition* start,
 																	 bool (*condition)(const MapInfo*, const MapPosition*));
 static bool find_start_position(const MapInfo* mapInfo,
 																  MapPosition* target_position);
+static bool find_next_cell_while_cleaning(const CleanerInfo* cleanerInfo,
+																					const MapInfo* mapInfo,
+																					MapPosition* next_cell);
 
 int start_drive(const MapInfo* mapInfo,
 								const MotorsInfo* motorsInfo,
@@ -36,7 +40,33 @@ int start_drive(const MapInfo* mapInfo,
 	if (!is_start_cell_found)
 		return 2;
 
+
+
 	return 0;
+}
+
+/*
+ * @brief find the next cell along the perimeters while cleaning. The cleaner always drives on
+ * the perimeter drawn by the area not already cleaned. the cleaner direction is clockwise,
+ * so the perimeter wall is always on the left.
+ * Precondition: there is at least one unavailable or already cleaned cell around
+ */
+static bool find_next_cell_while_cleaning(const CleanerInfo* cleanerInfo,
+																					const MapInfo* mapInfo,
+																					MapPosition* next_cell) {
+	bool is_boundary_found = false;
+
+	bool (*is_boundary)(const MapPosition*) =
+			lambda(bool, (const MapPosition* position), {
+				return !is_cell_valid(mapInfo, position) || mapInfo->map[position->row][position->col] == UNAVAILABLE ||
+						mapInfo->map[position->row][position->col] == ALREADY_CLEANED;
+			});
+
+	// is the boundary on top?
+	MapPosition* current_position = &cleanerInfo->position;
+	is_boundary_found = is_boundary(&(MapPosition) { .row = current_position->row - 1, .col = current_position->col });
+
+  // TODO
 }
 
 /*
@@ -50,9 +80,9 @@ static bool find_start_position(const MapInfo* mapInfo, MapPosition* target_posi
 	}
 
 	bool is_cell_to_clean_found = find_first_around_cell(&up_left_corner, mapInfo, target_position,
-				lambda(bool, (const MapInfo* mapInfo, const MapPosition* cur_cell), {
-					return mapInfo->map[cur_cell->row][cur_cell->col] == TO_CLEAN;
-				}));
+			lambda(bool, (const MapInfo* mapInfo, const MapPosition* cur_cell), {
+				return mapInfo->map[cur_cell->row][cur_cell->col] == TO_CLEAN;
+			}));
 
 	return is_cell_to_clean_found;
 }
@@ -90,7 +120,7 @@ static bool find_first_around_cell(const MapPosition* start,
 
 		bool is_cell_found = false;
 		// visiting the up row
-		if (start->row - radius >= 0) {
+		if (is_row_valid(mapInfo, start->row - radius)) {
 			is_cell_found = visit_boundary_for_search(mapInfo, left_limit, right_limit,
 					lambda(MapPosition, (uint16_t i), {
 						MapPosition cur_cell; cur_cell.row = up_limit; cur_cell.col = i;
@@ -100,7 +130,7 @@ static bool find_first_around_cell(const MapPosition* start,
 		}
 
 		// visiting the right column
-		if (!is_cell_found && start->col + radius < mapInfo->column_count) {
+		if (!is_cell_found && is_column_valid(mapInfo, start->col + radius)) {
 			is_cell_found = visit_boundary_for_search(mapInfo, up_limit, down_limit,
 					lambda(MapPosition, (uint16_t i), {
 						MapPosition cur_cell; cur_cell.row = i; cur_cell.col = right_limit;
@@ -110,7 +140,7 @@ static bool find_first_around_cell(const MapPosition* start,
 		}
 
 		// visiting the down row
-		if (!is_cell_found && start->row + radius < mapInfo->row_count)
+		if (!is_cell_found && is_row_valid(mapInfo, start->row + radius))
 			is_cell_found = visit_boundary_for_search(mapInfo, left_limit + 1, right_limit + 1,
 					lambda(MapPosition, (uint16_t i), {
 						MapPosition cur_cell; cur_cell.row = down_limit; cur_cell.col = i;
@@ -119,7 +149,7 @@ static bool find_first_around_cell(const MapPosition* start,
 					condition, target);
 
 		// visiting the left column
-		if (!is_cell_found && start->col - radius >= 0)
+		if (!is_cell_found && is_column_valid(mapInfo, start->col - radius))
 			is_cell_found = visit_boundary_for_search(mapInfo, up_limit + 1, down_limit + 1,
 					lambda(MapPosition, (uint16_t i), {
 						MapPosition cur_cell; cur_cell.row = i; cur_cell.col = left_limit;
