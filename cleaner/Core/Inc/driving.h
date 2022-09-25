@@ -18,7 +18,7 @@ void end_drive();
  * @retval 0 - the cleaner reached the destination
  * 				 1 - an obstacle has been found, the cleaner returned to the initial position
  */
-int drive_forward(const int* obstacleFound, const MotorsInfo* motorsInfo);
+bool drive_forward(const int* obstacle_found, MotorsInfo* motorsInfo);
 
 /**
  * @brief rotate the cleaner by 90° anti-clockwise

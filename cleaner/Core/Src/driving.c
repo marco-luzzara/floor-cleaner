@@ -16,6 +16,7 @@
 int millis_to_turn = 1000;
 int millis_to_drive = 1000;
 
+bool drive_forward(const int* obstacle_found, MotorsInfo* motorsInfo);
 static bool find_cleaner(const MapInfo* mapInfo, CleanerInfo* cleanerInfo);
 static bool find_first_around_cell(const MapPosition* start,
 																	 const MapInfo* mapInfo,
@@ -26,9 +27,14 @@ static bool find_start_position(const MapInfo* mapInfo,
 static bool find_next_cell_while_cleaning(const CleanerInfo* cleanerInfo,
 																					const MapInfo* mapInfo,
 																					MapPosition* next_cell);
+static bool move_cleaner_across_path(const MapInfo* mapInfo,
+																		 MotorsInfo* motorsInfo,
+																		 CleanerInfo* cleanerInfo,
+																		 MapPosition path[],
+																		 size_t path_length);
 
 int start_drive(const MapInfo* mapInfo,
-								const MotorsInfo* motorsInfo,
+								MotorsInfo* motorsInfo,
 								const CleanComponentsInfo* cleanComponentsInfo) {
 	CleanerInfo cleanerInfo;
 	bool is_cleaner_found = find_cleaner(mapInfo, &cleanerInfo);
@@ -45,6 +51,53 @@ int start_drive(const MapInfo* mapInfo,
 	return 0;
 }
 
+static bool move_cleaner_to_adjacent_position(const MapInfo* mapInfo,
+																							const int* obstacle_found,
+																						  MotorsInfo* motorsInfo,
+																						  CleanerInfo* cleanerInfo,
+																						  MapPosition* target_position) {
+	MapPosition* cleaner_pos = &cleanerInfo->position;
+	Direction current_dir = cleanerInfo->direction;
+	Direction target_dir;
+
+	// is the target position on the top
+	if (target_position->row == cleaner_pos->row - 1)
+		target_dir = UP;
+	// is the target position on the right
+	else if (target_position->col == cleaner_pos->col + 1)
+		target_dir = RIGHT;
+	// is the target position on the bottom
+	else if (target_position->row == cleaner_pos->row + 1)
+		target_dir = DOWN;
+	// is the target position on the left (target_position->col == cleaner_pos->col - 1))
+	else
+		target_dir = LEFT;
+
+	bool is_move_successful;
+	if (current_dir == target_dir) {
+		is_move_successful = drive_forward(obstacle_found, motorsInfo);
+	}
+	else if ((current_dir == UP && target_dir == RIGHT) ||
+					 (current_dir == RIGHT && target_dir == DOWN) ||
+					 (current_dir == DOWN && target_dir == LEFT) ||
+					 (current_dir == LEFT && target_dir == UP)) {
+		turn_right(motorsInfo);
+	}
+
+	return is_move_successful;
+
+}
+
+static bool move_cleaner_across_path(const MapInfo* mapInfo,
+																		 MotorsInfo* motorsInfo,
+																		 CleanerInfo* cleanerInfo,
+																		 MapPosition path[],
+																		 size_t path_length) {
+	for (size_t i = 0; i < path_length; i++) {
+
+	}
+}
+
 /*
  * @brief find the next cell along the perimeters while cleaning. The cleaner always drives on
  * the perimeter drawn by the area not already cleaned. the cleaner direction is clockwise,
@@ -54,19 +107,42 @@ int start_drive(const MapInfo* mapInfo,
 static bool find_next_cell_while_cleaning(const CleanerInfo* cleanerInfo,
 																					const MapInfo* mapInfo,
 																					MapPosition* next_cell) {
-	bool is_boundary_found = false;
-
 	bool (*is_boundary)(const MapPosition*) =
 			lambda(bool, (const MapPosition* position), {
 				return !is_cell_valid(mapInfo, position) || mapInfo->map[position->row][position->col] == UNAVAILABLE ||
 						mapInfo->map[position->row][position->col] == ALREADY_CLEANED;
 			});
 
-	// is the boundary on top?
 	MapPosition* current_position = &cleanerInfo->position;
-	is_boundary_found = is_boundary(&(MapPosition) { .row = current_position->row - 1, .col = current_position->col });
+	bool boundaries[4];
 
-  // TODO
+	// is the boundary on the top?
+	MapPosition top_boundary = { .row = current_position->row - 1, .col = current_position->col };
+	boundaries[0] = is_boundary(&top_boundary);
+	// is the boundary on the right?
+	MapPosition right_boundary = { .row = current_position->row, .col = current_position->col + 1 };
+	boundaries[1] = is_boundary(&right_boundary);
+	// is the boundary on the bottom?
+	MapPosition bottom_boundary = { .row = current_position->row + 1, .col = current_position->col };
+	boundaries[2] = is_boundary(&bottom_boundary);
+	// is the boundary on the left?
+	MapPosition left_boundary = { .row = current_position->row, .col = current_position->col - 1 };
+	boundaries[3] = is_boundary(&left_boundary);
+
+	// cleaning around the cell is complete
+	if (boundaries[0] && boundaries[1] && boundaries[2] && boundaries[3])
+		return false;
+
+	if (boundaries[0] && !boundaries[1])
+		*next_cell = right_boundary;
+	else if (boundaries[1] && !boundaries[2])
+		*next_cell = bottom_boundary;
+	else if (boundaries[2] && !boundaries[3])
+		*next_cell = left_boundary;
+	else
+		*next_cell = top_boundary;
+
+	return true;
 }
 
 /*
@@ -184,7 +260,7 @@ static bool find_cleaner(const MapInfo* mapInfo, CleanerInfo* cleanerInfo) {
 }
 
 
-int drive_forward(const int* obstacle_found, MotorsInfo* motorsInfo) {
+bool drive_forward(const int* obstacle_found, MotorsInfo* motorsInfo) {
 	// modified from HAL_Delay(Delay)
 	HAL_GPIO_WritePin(&motorsInfo->antiClockwise_left_GPIOType, motorsInfo->antiClockwise_left_pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(&motorsInfo->clockwise_right_GPIOType, motorsInfo->clockwise_right_pin, GPIO_PIN_SET);
@@ -205,7 +281,7 @@ int drive_forward(const int* obstacle_found, MotorsInfo* motorsInfo) {
 	HAL_GPIO_WritePin(&motorsInfo->clockwise_right_GPIOType, motorsInfo->clockwise_right_pin, GPIO_PIN_RESET);
 
   if (undo_drive == 0)
-  	return 0;
+  	return true;
 
   // drive backward because of obstacle
   HAL_GPIO_WritePin(&motorsInfo->clockwise_left_GPIOType, motorsInfo->clockwise_left_pin, GPIO_PIN_SET);
@@ -217,7 +293,7 @@ int drive_forward(const int* obstacle_found, MotorsInfo* motorsInfo) {
   HAL_GPIO_WritePin(&motorsInfo->clockwise_left_GPIOType, motorsInfo->clockwise_left_pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(&motorsInfo->antiClockwise_right_GPIOType, motorsInfo->antiClockwise_right_pin, GPIO_PIN_RESET);
 
-	return 1;
+	return false;
 }
 
 void turn_left(MotorsInfo* motorsInfo) {
