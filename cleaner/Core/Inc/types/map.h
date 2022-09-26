@@ -42,4 +42,8 @@ inline bool is_cell_valid(const MapInfo* mapInfo, const MapPosition* cell) {
 	return is_row_valid(mapInfo, cell->row) && is_column_valid(mapInfo, cell->col);
 }
 
+inline bool are_MapPositions_equal(MapPosition* mp1, MapPosition* mp2) {
+	return mp1->row == mp2->row && mp1->col == mp2->col;
+}
+
 #endif /* INC_TYPES_MAP_H_ */

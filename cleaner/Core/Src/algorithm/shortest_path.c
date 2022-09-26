@@ -47,10 +47,16 @@ static float path_node_heuristic(void *fromNode, void *toNode, void *context)
     return fabs(from->row - to->row) + fabs(from->col - to->col);
 }
 
+/*
+ * @brief finds a path of adjacent MapPosition. this `path` is a dynamically allocated
+ * array that must be freed.
+ * @retval true if a path exist, false otherwise
+ */
 bool find_best_path(const MapPosition* start,
 										const MapPosition* end,
 										const MapInfo* mapInfo,
-										ASPath* path) {
+										MapPosition* path[],
+										size_t* path_length) {
 	ASPathNodeSource path_node_source =
 	{
 	    sizeof(MapPosition),
@@ -59,7 +65,31 @@ bool find_best_path(const MapPosition* start,
 	    NULL,
 	    NULL
 	};
-	*path = ASPathCreate(&path_node_source, (void*) mapInfo, (void*) start, (void*) end);
+	ASPath asPath = ASPathCreate(&path_node_source, (void*) mapInfo, (void*) start, (void*) end);
 
-	return ASPathGetCount(*path) > 0;
+	*path_length = ASPathGetCount(asPath);
+	if (*path_length == 0)
+		return false;
+
+	*path = (MapPosition*) calloc(*path_length, sizeof(MapPosition));
+
+	for (size_t i = 0; i < *path_length; i++) {
+		MapPosition* next_position = ASPathGetNode(asPath, i);
+		(*path)[i] = *next_position;
+	}
+
+	ASPathDestroy(asPath);
+
+	return true;
 }
+
+
+
+
+
+
+
+
+
+
+
