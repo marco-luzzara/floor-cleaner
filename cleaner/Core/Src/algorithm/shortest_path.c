@@ -68,8 +68,10 @@ bool find_best_path(const MapPosition* start,
 	ASPath asPath = ASPathCreate(&path_node_source, (void*) mapInfo, (void*) start, (void*) end);
 
 	*path_length = ASPathGetCount(asPath);
-	if (*path_length == 0)
+	if (*path_length == 0) {
+		ASPathDestroy(asPath);
 		return false;
+	}
 
 	*path = (MapPosition*) calloc(*path_length, sizeof(MapPosition));
 

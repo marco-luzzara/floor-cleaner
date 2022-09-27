@@ -16,7 +16,7 @@
 int millis_to_turn = 1000;
 int millis_to_drive = 1000;
 
-static bool drive_forward(CleanerInfo* cleanerInfo, const bool* obstacle_found, MotorsInfo* motorsInfo);
+static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, MotorsInfo* motorsInfo);
 static void turn_left(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo);
 static void turn_right(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo);
 static bool initialize_cleaner(const MapInfo* mapInfo, CleanerInfo* cleanerInfo);
@@ -29,14 +29,24 @@ static bool find_start_position(const MapInfo* mapInfo,
 static bool find_next_cell_while_cleaning(const CleanerInfo* cleanerInfo,
 																					const MapInfo* mapInfo,
 																					MapPosition* next_cell);
-static bool move_cleaner_across_path(const MapInfo* mapInfo,
+static bool move_cleaner_across_path(MapInfo* mapInfo,
 																		 bool* obstacle_found,
 																		 MotorsInfo* motorsInfo,
 																		 CleanerInfo* cleanerInfo,
 																		 MapPosition path[],
 																		 size_t path_length);
+static bool move_cleaner_to(MapInfo* mapInfo,
+														bool* obstacle_found,
+														MotorsInfo* motorsInfo,
+														CleanerInfo* cleanerInfo,
+														MapPosition* target_position);
+static bool move_cleaner_to_adjacent_position(MapInfo* mapInfo,
+																							bool* obstacle_found,
+																						  MotorsInfo* motorsInfo,
+																						  CleanerInfo* cleanerInfo,
+																						  MapPosition* target_position);
 
-int start_drive(const MapInfo* mapInfo,
+int start_drive(MapInfo* mapInfo,
 								bool* obstacle_found,
 								MotorsInfo* motorsInfo,
 								const CleanComponentsInfo* cleanComponentsInfo) {
@@ -50,22 +60,66 @@ int start_drive(const MapInfo* mapInfo,
 	if (!is_start_cell_found)
 		return 2;
 
-	if (!are_MapPositions_equal(&start_position, &cleanerInfo.position)) {
-		MapPosition* path; size_t path_length;
-		bool does_path_exist = find_best_path(&cleanerInfo.position, &start_position, mapInfo, &path, &path_length);
+	bool can_move_to_start_position = move_cleaner_to(mapInfo,
+																										obstacle_found,
+																										motorsInfo,
+																										&cleanerInfo,
+																										&start_position);
 
+	if (!can_move_to_start_position)
+		return 3;
+
+	while (true) {
+		MapPosition next_cell;
+		bool is_cell_available = find_next_cell_while_cleaning(&cleanerInfo, mapInfo, &next_cell);
+
+		if (is_cell_available)
+			move_cleaner_to_adjacent_position(mapInfo, obstacle_found, motorsInfo, &cleanerInfo, &next_cell);
+		else {
+			bool is_cleaning_complete = find_first_around_cell(&cleanerInfo.position, mapInfo, &next_cell,
+					lambda(bool, (const MapInfo* inner_mapInfo, const MapPosition* target_pos), {
+						return inner_mapInfo->map[target_pos->row][target_pos->col] == TO_CLEAN;
+					}));
+
+			if (is_cleaning_complete)
+				break;
+
+			bool can_reach_next_cell = move_cleaner_to(mapInfo, obstacle_found, motorsInfo, &cleanerInfo, &next_cell);
+			if (!can_reach_next_cell)
+				return 4;
+		}
 	}
-
-//	move_cleaner_across_path(mapInfo, obstacle_found, motorsInfo, cleanerInfo, path, path_length)
 
 	return 0;
 }
 
-static bool move_cleaner_to_adjacent_position(const MapInfo* mapInfo,
+static bool move_cleaner_to(MapInfo* mapInfo,
+														bool* obstacle_found,
+														MotorsInfo* motorsInfo,
+														CleanerInfo* cleanerInfo,
+														MapPosition* target_position) {
+	assert(mapInfo->map[target_position->row][target_position->col] != UNAVAILABLE);
+
+	while (!are_MapPositions_equal(&cleanerInfo->position, target_position)) {
+		MapPosition* path; size_t path_length;
+		bool does_path_exist = find_best_path(&cleanerInfo->position, target_position, mapInfo, &path, &path_length);
+		if (!does_path_exist)
+			return false;
+
+		move_cleaner_across_path(mapInfo, obstacle_found, motorsInfo, cleanerInfo, path, path_length);
+		free(path);
+	}
+
+	return true;
+}
+
+static bool move_cleaner_to_adjacent_position(MapInfo* mapInfo,
 																							bool* obstacle_found,
 																						  MotorsInfo* motorsInfo,
 																						  CleanerInfo* cleanerInfo,
 																						  MapPosition* target_position) {
+	assert(mapInfo->map[target_position->row][target_position->col] != UNAVAILABLE);
+
 	MapPosition* cleaner_pos = &cleanerInfo->position;
 	Direction current_dir = cleanerInfo->direction;
 	Direction target_dir;
@@ -97,12 +151,13 @@ static bool move_cleaner_to_adjacent_position(const MapInfo* mapInfo,
 
 	// now the direction is correct
 	bool is_move_successful = drive_forward(cleanerInfo, obstacle_found, motorsInfo);
-	obstacle_found = false; // reset obstacle found
+	if (!is_move_successful) // an obstacle has been found
+		mapInfo->map[target_position->row][target_position->col] = UNAVAILABLE;
 
 	return is_move_successful;
 }
 
-static bool move_cleaner_across_path(const MapInfo* mapInfo,
+static bool move_cleaner_across_path(MapInfo* mapInfo,
 																		 bool* obstacle_found,
 																		 MotorsInfo* motorsInfo,
 																		 CleanerInfo* cleanerInfo,
@@ -290,19 +345,22 @@ static bool initialize_cleaner(const MapInfo* mapInfo, CleanerInfo* cleanerInfo)
  * @retval 0 - the cleaner reached the destination
  * 				 1 - an obstacle has been found, the cleaner returned to the initial position
  */
-static bool drive_forward(CleanerInfo* cleanerInfo, const bool* obstacle_found, MotorsInfo* motorsInfo) {
+static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, MotorsInfo* motorsInfo) {
+	// reset obstacle_found to be sure the cleaner starts moving
+	*obstacle_found = false;
+
 	// modified from HAL_Delay(Delay)
 	HAL_GPIO_WritePin(&motorsInfo->antiClockwise_left_GPIOType, motorsInfo->antiClockwise_left_pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(&motorsInfo->clockwise_right_GPIOType, motorsInfo->clockwise_right_pin, GPIO_PIN_SET);
   uint32_t tickstart = HAL_GetTick();
   uint32_t wait = millis_to_drive;
-  uint8_t undo_drive = 0;
+  bool undo_drive = false;
   uint32_t undo_delay;
 
   while((undo_delay = HAL_GetTick() - tickstart) < wait)
   {
   	if (*obstacle_found == true) {
-  		undo_drive = 1;
+  		undo_drive = true;
   		break;
   	}
   }
@@ -310,7 +368,7 @@ static bool drive_forward(CleanerInfo* cleanerInfo, const bool* obstacle_found, 
   HAL_GPIO_WritePin(&motorsInfo->antiClockwise_left_GPIOType, motorsInfo->antiClockwise_left_pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(&motorsInfo->clockwise_right_GPIOType, motorsInfo->clockwise_right_pin, GPIO_PIN_RESET);
 
-  if (undo_drive == 0) {
+  if (undo_drive == false) {
   	uint16_t current_row = cleanerInfo->position.row;
   	uint16_t current_col = cleanerInfo->position.col;
 

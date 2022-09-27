@@ -15,6 +15,6 @@ bool find_best_path(const MapPosition* start,
 										const MapPosition* end,
 										const MapInfo* mapInfo,
 										MapPosition* path[],
-										int* path_size);
+										size_t* path_size);
 
 #endif /* INC_ALGORITHM_SHORTEST_PATH_H_ */

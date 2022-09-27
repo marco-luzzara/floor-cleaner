@@ -5,6 +5,7 @@
  * @brief starts to drive
  * @retval 0 - the cleaner completed the cleaning process
  * 				 1 - cleaner not found
+ * 				 2 - start position cannot be reached
  */
 int start_drive(const MapInfo* mapInfo, const MotorsInfo* motorsInfo);
 

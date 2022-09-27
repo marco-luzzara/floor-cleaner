@@ -7,23 +7,23 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
   1 .text         00002b24  080000c0  080000c0  000100c0  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  2 .rodata       0000017c  08002be4  08002be4  00012be4  2**2
+  2 .rodata       000001dc  08002be4  08002be4  00012be4  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  3 .ARM.extab    00000000  08002d60  08002d60  00020070  2**0
+  3 .ARM.extab    00000000  08002dc0  08002dc0  00020070  2**0
                   CONTENTS
-  4 .ARM          00000008  08002d60  08002d60  00012d60  2**2
+  4 .ARM          00000008  08002dc0  08002dc0  00012dc0  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  5 .preinit_array 00000000  08002d68  08002d68  00020070  2**0
+  5 .preinit_array 00000000  08002dc8  08002dc8  00020070  2**0
                   CONTENTS, ALLOC, LOAD, DATA
-  6 .init_array   00000004  08002d68  08002d68  00012d68  2**2
+  6 .init_array   00000004  08002dc8  08002dc8  00012dc8  2**2
                   CONTENTS, ALLOC, LOAD, DATA
-  7 .fini_array   00000004  08002d6c  08002d6c  00012d6c  2**2
+  7 .fini_array   00000004  08002dcc  08002dcc  00012dcc  2**2
                   CONTENTS, ALLOC, LOAD, DATA
-  8 .data         00000070  20000000  08002d70  00020000  2**2
+  8 .data         00000070  20000000  08002dd0  00020000  2**2
                   CONTENTS, ALLOC, LOAD, DATA
-  9 .bss          000000c0  20000070  08002de0  00020070  2**2
+  9 .bss          000000c0  20000070  08002e40  00020070  2**2
                   ALLOC
- 10 ._user_heap_stack 00000600  20000130  08002de0  00020130  2**0
+ 10 ._user_heap_stack 00000600  20000130  08002e40  00020130  2**0
                   ALLOC
  11 .ARM.attributes 00000028  00000000  00000000  00020070  2**0
                   CONTENTS, READONLY
@@ -43,7 +43,7 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  19 .comment      00000053  00000000  00000000  000af60a  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  00001a48  00000000  00000000  000af660  2**2
+ 20 .debug_frame  00001bb8  00000000  00000000  000af660  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -1598,7 +1598,7 @@ LoopForever:
   ldr r1, =_edata
  80009b0:	20000070 	.word	0x20000070
   ldr r2, =_sidata
- 80009b4:	08002d70 	.word	0x08002d70
+ 80009b4:	08002dd0 	.word	0x08002dd0
   ldr r2, =_sbss
  80009b8:	20000070 	.word	0x20000070
   ldr r4, =_ebss
@@ -7265,10 +7265,10 @@ __STATIC_FORCEINLINE void __set_PRIMASK(uint32_t priMask)
  800295a:	4798      	blx	r3
  800295c:	3601      	adds	r6, #1
  800295e:	e7f2      	b.n	8002946 <__libc_init_array+0x1e>
- 8002960:	08002d68 	.word	0x08002d68
- 8002964:	08002d68 	.word	0x08002d68
- 8002968:	08002d68 	.word	0x08002d68
- 800296c:	08002d6c 	.word	0x08002d6c
+ 8002960:	08002dc8 	.word	0x08002dc8
+ 8002964:	08002dc8 	.word	0x08002dc8
+ 8002968:	08002dc8 	.word	0x08002dc8
+ 800296c:	08002dcc 	.word	0x08002dcc
 
 08002970 <malloc>:
  8002970:	b510      	push	{r4, lr}
@@ -7303,7 +7303,7 @@ __STATIC_FORCEINLINE void __set_PRIMASK(uint32_t priMask)
  80029a6:	42a9      	cmp	r1, r5
  80029a8:	d81e      	bhi.n	80029e8 <_malloc_r+0x54>
  80029aa:	0030      	movs	r0, r6
- 80029ac:	f000 f8fc 	bl	8002ba8 <__malloc_lock>
+ 80029ac:	f000 f8fe 	bl	8002bac <__malloc_lock>
  80029b0:	4925      	ldr	r1, [pc, #148]	; (8002a48 <_malloc_r+0xb4>)
  80029b2:	680a      	ldr	r2, [r1, #0]
  80029b4:	0014      	movs	r4, r2
@@ -7325,7 +7325,7 @@ __STATIC_FORCEINLINE void __set_PRIMASK(uint32_t priMask)
  80029d8:	230c      	movs	r3, #12
  80029da:	0030      	movs	r0, r6
  80029dc:	6033      	str	r3, [r6, #0]
- 80029de:	f000 f8eb 	bl	8002bb8 <__malloc_unlock>
+ 80029de:	f000 f8ed 	bl	8002bbc <__malloc_unlock>
  80029e2:	e003      	b.n	80029ec <_malloc_r+0x58>
  80029e4:	2d00      	cmp	r5, #0
  80029e6:	dade      	bge.n	80029a6 <_malloc_r+0x12>
@@ -7347,7 +7347,7 @@ __STATIC_FORCEINLINE void __set_PRIMASK(uint32_t priMask)
  8002a06:	d10e      	bne.n	8002a26 <_malloc_r+0x92>
  8002a08:	600b      	str	r3, [r1, #0]
  8002a0a:	0030      	movs	r0, r6
- 8002a0c:	f000 f8d4 	bl	8002bb8 <__malloc_unlock>
+ 8002a0c:	f000 f8d6 	bl	8002bbc <__malloc_unlock>
  8002a10:	0020      	movs	r0, r4
  8002a12:	2207      	movs	r2, #7
  8002a14:	300b      	adds	r0, #11
@@ -7394,7 +7394,7 @@ __STATIC_FORCEINLINE void __set_PRIMASK(uint32_t priMask)
  8002a6a:	6023      	str	r3, [r4, #0]
  8002a6c:	bd70      	pop	{r4, r5, r6, pc}
  8002a6e:	46c0      	nop			; (mov r8, r8)
- 8002a70:	20000120 	.word	0x20000120
+ 8002a70:	2000012c 	.word	0x2000012c
 
 08002a74 <_strtol_l.isra.0>:
  8002a74:	b5f0      	push	{r4, r5, r6, r7, lr}
@@ -7548,27 +7548,27 @@ __STATIC_FORCEINLINE void __set_PRIMASK(uint32_t priMask)
  8002ba2:	46c0      	nop			; (mov r8, r8)
  8002ba4:	2000000c 	.word	0x2000000c
 
-08002ba8 <__malloc_lock>:
- 8002ba8:	b510      	push	{r4, lr}
- 8002baa:	4802      	ldr	r0, [pc, #8]	; (8002bb4 <__malloc_lock+0xc>)
- 8002bac:	f000 f80c 	bl	8002bc8 <__retarget_lock_acquire_recursive>
- 8002bb0:	bd10      	pop	{r4, pc}
- 8002bb2:	46c0      	nop			; (mov r8, r8)
- 8002bb4:	20000128 	.word	0x20000128
+08002ba8 <__retarget_lock_acquire_recursive>:
+ 8002ba8:	4770      	bx	lr
 
-08002bb8 <__malloc_unlock>:
- 8002bb8:	b510      	push	{r4, lr}
- 8002bba:	4802      	ldr	r0, [pc, #8]	; (8002bc4 <__malloc_unlock+0xc>)
- 8002bbc:	f000 f805 	bl	8002bca <__retarget_lock_release_recursive>
- 8002bc0:	bd10      	pop	{r4, pc}
- 8002bc2:	46c0      	nop			; (mov r8, r8)
- 8002bc4:	20000128 	.word	0x20000128
+08002baa <__retarget_lock_release_recursive>:
+ 8002baa:	4770      	bx	lr
 
-08002bc8 <__retarget_lock_acquire_recursive>:
- 8002bc8:	4770      	bx	lr
+08002bac <__malloc_lock>:
+ 8002bac:	b510      	push	{r4, lr}
+ 8002bae:	4802      	ldr	r0, [pc, #8]	; (8002bb8 <__malloc_lock+0xc>)
+ 8002bb0:	f7ff fffa 	bl	8002ba8 <__retarget_lock_acquire_recursive>
+ 8002bb4:	bd10      	pop	{r4, pc}
+ 8002bb6:	46c0      	nop			; (mov r8, r8)
+ 8002bb8:	20000124 	.word	0x20000124
 
-08002bca <__retarget_lock_release_recursive>:
- 8002bca:	4770      	bx	lr
+08002bbc <__malloc_unlock>:
+ 8002bbc:	b510      	push	{r4, lr}
+ 8002bbe:	4802      	ldr	r0, [pc, #8]	; (8002bc8 <__malloc_unlock+0xc>)
+ 8002bc0:	f7ff fff3 	bl	8002baa <__retarget_lock_release_recursive>
+ 8002bc4:	bd10      	pop	{r4, pc}
+ 8002bc6:	46c0      	nop			; (mov r8, r8)
+ 8002bc8:	20000124 	.word	0x20000124
 
 08002bcc <_init>:
  8002bcc:	b5f8      	push	{r3, r4, r5, r6, r7, lr}
