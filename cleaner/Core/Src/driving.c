@@ -19,7 +19,9 @@ int millis_to_drive = 1000;
 static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, MotorsInfo* motorsInfo);
 static void turn_left(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo);
 static void turn_right(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo);
-static bool initialize_cleaner(const MapInfo* mapInfo, CleanerInfo* cleanerInfo);
+static void enable_cleaning(CleanComponentsInfo* cleanComponentsInfo);
+static void disable_cleaning(CleanComponentsInfo* cleanComponentsInfo);
+static bool initialize_cleaner(MapInfo* mapInfo, CleanerInfo* cleanerInfo);
 static bool find_first_around_cell(const MapPosition* start,
 																	 const MapInfo* mapInfo,
 																	 MapPosition* target,
@@ -29,12 +31,6 @@ static bool find_start_position(const MapInfo* mapInfo,
 static bool find_next_cell_while_cleaning(const CleanerInfo* cleanerInfo,
 																					const MapInfo* mapInfo,
 																					MapPosition* next_cell);
-static bool move_cleaner_across_path(MapInfo* mapInfo,
-																		 bool* obstacle_found,
-																		 MotorsInfo* motorsInfo,
-																		 CleanerInfo* cleanerInfo,
-																		 MapPosition path[],
-																		 size_t path_length);
 static bool move_cleaner_to(MapInfo* mapInfo,
 														bool* obstacle_found,
 														MotorsInfo* motorsInfo,
@@ -49,7 +45,7 @@ static bool move_cleaner_to_adjacent_position(MapInfo* mapInfo,
 int start_drive(MapInfo* mapInfo,
 								bool* obstacle_found,
 								MotorsInfo* motorsInfo,
-								const CleanComponentsInfo* cleanComponentsInfo) {
+								CleanComponentsInfo* cleanComponentsInfo) {
 	CleanerInfo cleanerInfo;
 	bool is_cleaner_found = initialize_cleaner(mapInfo, &cleanerInfo);
 	if (!is_cleaner_found)
@@ -68,31 +64,43 @@ int start_drive(MapInfo* mapInfo,
 
 	if (!can_move_to_start_position)
 		return 3;
+	mapInfo->map[start_position.row][start_position.col] = ALREADY_CLEANED;
 
-	while (true) {
+	bool is_cleaning_complete = false;
+	while (!is_cleaning_complete) {
 		MapPosition next_cell;
 		bool is_cell_available = find_next_cell_while_cleaning(&cleanerInfo, mapInfo, &next_cell);
 
-		if (is_cell_available)
+		if (is_cell_available) {
+			enable_cleaning(cleanComponentsInfo);
 			move_cleaner_to_adjacent_position(mapInfo, obstacle_found, motorsInfo, &cleanerInfo, &next_cell);
+			disable_cleaning(cleanComponentsInfo);
+
+			mapInfo->map[next_cell.row][next_cell.col] = ALREADY_CLEANED;
+		}
 		else {
-			bool is_cleaning_complete = find_first_around_cell(&cleanerInfo.position, mapInfo, &next_cell,
+			is_cleaning_complete = find_first_around_cell(&cleanerInfo.position, mapInfo, &next_cell,
 					lambda(bool, (const MapInfo* inner_mapInfo, const MapPosition* target_pos), {
 						return inner_mapInfo->map[target_pos->row][target_pos->col] == TO_CLEAN;
 					}));
 
-			if (is_cleaning_complete)
-				break;
-
-			bool can_reach_next_cell = move_cleaner_to(mapInfo, obstacle_found, motorsInfo, &cleanerInfo, &next_cell);
-			if (!can_reach_next_cell)
-				return 4;
+			if (!is_cleaning_complete) {
+				bool can_reach_next_cell = move_cleaner_to(mapInfo, obstacle_found, motorsInfo, &cleanerInfo, &next_cell);
+				if (!can_reach_next_cell)
+					return 4;
+			}
 		}
 	}
 
 	return 0;
 }
 
+/*
+ * move cleaner to a non-adjacent non-UNAVAILABLE position using a shortest path algorithm.
+ * If an obstacle is found during the road, the shortest path is recomputed.
+ * this method returns false only when there is no path to the specified target position
+ * Precondition: the path is made of adjacent positions.
+ */
 static bool move_cleaner_to(MapInfo* mapInfo,
 														bool* obstacle_found,
 														MotorsInfo* motorsInfo,
@@ -106,13 +114,30 @@ static bool move_cleaner_to(MapInfo* mapInfo,
 		if (!does_path_exist)
 			return false;
 
-		move_cleaner_across_path(mapInfo, obstacle_found, motorsInfo, cleanerInfo, path, path_length);
+		bool is_move_successful;
+		for (size_t i = 0; i < path_length; i++) {
+			is_move_successful = move_cleaner_to_adjacent_position(mapInfo,
+																														 obstacle_found,
+																														 motorsInfo,
+																														 cleanerInfo,
+																														 &path[i]);
+			if (!is_move_successful)
+				break;
+		}
+
 		free(path);
 	}
 
 	return true;
 }
 
+/*
+ * @brief move the cleaner to the next adjacent position that is compliant
+ * with the cleaning logic. the cleaner will find the next position TO_CLEAN
+ * after an UNAVAILABLE or ALREADY_CLEANED position, visiting the 4 directions
+ * clockwise. The reason is that the cleaner moves next to the perimeter in a
+ * clockwise way.
+ */
 static bool move_cleaner_to_adjacent_position(MapInfo* mapInfo,
 																							bool* obstacle_found,
 																						  MotorsInfo* motorsInfo,
@@ -157,30 +182,10 @@ static bool move_cleaner_to_adjacent_position(MapInfo* mapInfo,
 	return is_move_successful;
 }
 
-static bool move_cleaner_across_path(MapInfo* mapInfo,
-																		 bool* obstacle_found,
-																		 MotorsInfo* motorsInfo,
-																		 CleanerInfo* cleanerInfo,
-																		 MapPosition path[],
-																		 size_t path_length) {
-	bool is_move_successful;
-	for (size_t i = 0; i < path_length; i++) {
-		is_move_successful = move_cleaner_to_adjacent_position(mapInfo,
-																													 obstacle_found,
-																													 motorsInfo,
-																													 cleanerInfo,
-																													 &path[i]);
-		if (!is_move_successful)
-			return false;
-	}
-
-	return true;
-}
-
 /*
- * @brief find the next cell along the perimeters while cleaning. The cleaner always drives on
+ * @brief find the next cell along the perimeter while cleaning. The cleaner always drives on
  * the perimeter drawn by the area not already cleaned. the cleaner direction is clockwise,
- * so the perimeter wall is always on the left.
+ * so the perimeter wall is always on its left.
  * Precondition: there is at least one unavailable or already cleaned cell around
  */
 static bool find_next_cell_while_cleaning(const CleanerInfo* cleanerInfo,
@@ -229,16 +234,14 @@ static bool find_next_cell_while_cleaning(const CleanerInfo* cleanerInfo,
  */
 static bool find_start_position(const MapInfo* mapInfo, MapPosition* target_position) {
 	MapPosition up_left_corner = { .row = 0, .col = 0 };
-	if (mapInfo->map[up_left_corner.row][up_left_corner.col] == TO_CLEAN ||
-			mapInfo->map[up_left_corner.row][up_left_corner.col] == CLEANER_POS) {
+	if (mapInfo->map[up_left_corner.row][up_left_corner.col] == TO_CLEAN) {
 		*target_position = up_left_corner;
 		return true;
 	}
 
 	bool is_cell_to_clean_found = find_first_around_cell(&up_left_corner, mapInfo, target_position,
 			lambda(bool, (const MapInfo* mapInfo, const MapPosition* cur_cell), {
-				return mapInfo->map[cur_cell->row][cur_cell->col] == TO_CLEAN ||
-						mapInfo->map[cur_cell->row][cur_cell->col] == CLEANER_POS;
+				return mapInfo->map[cur_cell->row][cur_cell->col] == TO_CLEAN;
 			}));
 
 	return is_cell_to_clean_found;
@@ -261,6 +264,12 @@ static bool visit_boundary_for_search(const MapInfo* mapInfo,
 	return false;
 }
 
+/*
+ * @brief find the first cell that satisfies the condition function. the search is
+ * performed all around the cell (excluding the cell itself): first the enclosing square with
+ * edge length= 3 is visited, then the enclosing square with edge length = 5 and so on until
+ * all the grid is visited.
+ */
 static bool find_first_around_cell(const MapPosition* start,
 																	 const MapInfo* mapInfo,
 																	 MapPosition* target,
@@ -324,13 +333,14 @@ static bool find_first_around_cell(const MapPosition* start,
 /*
  * @brief find the current position of the cleaner, if present. direction is assumed UP
  */
-static bool initialize_cleaner(const MapInfo* mapInfo, CleanerInfo* cleanerInfo) {
+static bool initialize_cleaner(MapInfo* mapInfo, CleanerInfo* cleanerInfo) {
 	for (int r = 0; r < mapInfo->row_count; r++) {
 		for (int c = 0; c < mapInfo->column_count; c++) {
 			if (mapInfo->map[r][c] == CLEANER_POS) {
 				cleanerInfo->direction = UP;
 				cleanerInfo->position.row = r;
 				cleanerInfo->position.col = c;
+				mapInfo->map[r][c] = TO_CLEAN;
 
 				return true;
 			}
@@ -359,7 +369,7 @@ static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, Motors
 
   while((undo_delay = HAL_GetTick() - tickstart) < wait)
   {
-  	if (*obstacle_found == true) {
+  	if (*obstacle_found) {
   		undo_drive = true;
   		break;
   	}
@@ -368,7 +378,7 @@ static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, Motors
   HAL_GPIO_WritePin(&motorsInfo->antiClockwise_left_GPIOType, motorsInfo->antiClockwise_left_pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(&motorsInfo->clockwise_right_GPIOType, motorsInfo->clockwise_right_pin, GPIO_PIN_RESET);
 
-  if (undo_drive == false) {
+  if (!undo_drive) {
   	uint16_t current_row = cleanerInfo->position.row;
   	uint16_t current_col = cleanerInfo->position.col;
 
@@ -411,7 +421,7 @@ static void turn_left(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo) {
 	HAL_GPIO_WritePin(&motorsInfo->clockwise_right_GPIOType, motorsInfo->clockwise_right_pin, GPIO_PIN_RESET);
 
 	// adding 3 is like subtracting 1 with modulo 4
-	cleanerInfo->direction = (cleanerInfo->direction + 1) % 4;
+	cleanerInfo->direction = (cleanerInfo->direction + 3) % 4;
 }
 
 /**
@@ -427,4 +437,12 @@ static void turn_right(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo) {
 	HAL_GPIO_WritePin(&motorsInfo->antiClockwise_right_GPIOType, motorsInfo->antiClockwise_right_pin, GPIO_PIN_RESET);
 
 	cleanerInfo->direction = (cleanerInfo->direction + 1) % 4;
+}
+
+static void enable_cleaning(CleanComponentsInfo* cleanComponentsInfo) {
+	HAL_GPIO_WritePin(&cleanComponentsInfo->vacuum_GPIOType, cleanComponentsInfo->vacuum_pin, GPIO_PIN_SET);
+}
+
+static void disable_cleaning(CleanComponentsInfo* cleanComponentsInfo) {
+	HAL_GPIO_WritePin(&cleanComponentsInfo->vacuum_GPIOType, cleanComponentsInfo->vacuum_pin, GPIO_PIN_RESET);
 }
