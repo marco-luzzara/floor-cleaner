@@ -358,13 +358,14 @@ static bool initialize_cleaner(MapInfo* mapInfo, CleanerInfo* cleanerInfo) {
 static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, MotorsInfo* motorsInfo) {
 	// reset obstacle_found to be sure the cleaner starts moving
 	*obstacle_found = false;
+	bool undo_drive = false;
 
+#ifndef __TESTING__
 	// modified from HAL_Delay(Delay)
 	HAL_GPIO_WritePin(&motorsInfo->antiClockwise_left_GPIOType, motorsInfo->antiClockwise_left_pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(&motorsInfo->clockwise_right_GPIOType, motorsInfo->clockwise_right_pin, GPIO_PIN_SET);
   uint32_t tickstart = HAL_GetTick();
   uint32_t wait = millis_to_drive;
-  bool undo_drive = false;
   uint32_t undo_delay;
 
   while((undo_delay = HAL_GetTick() - tickstart) < wait)
@@ -377,6 +378,7 @@ static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, Motors
 
   HAL_GPIO_WritePin(&motorsInfo->antiClockwise_left_GPIOType, motorsInfo->antiClockwise_left_pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(&motorsInfo->clockwise_right_GPIOType, motorsInfo->clockwise_right_pin, GPIO_PIN_RESET);
+#endif
 
   if (!undo_drive) {
   	uint16_t current_row = cleanerInfo->position.row;
@@ -395,6 +397,7 @@ static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, Motors
   	return true;
   }
 
+#ifndef __TESTING__
   // drive backward because of obstacle
   HAL_GPIO_WritePin(&motorsInfo->clockwise_left_GPIOType, motorsInfo->clockwise_left_pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(&motorsInfo->antiClockwise_right_GPIOType, motorsInfo->antiClockwise_right_pin, GPIO_PIN_SET);
@@ -404,6 +407,7 @@ static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, Motors
 
   HAL_GPIO_WritePin(&motorsInfo->clockwise_left_GPIOType, motorsInfo->clockwise_left_pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(&motorsInfo->antiClockwise_right_GPIOType, motorsInfo->antiClockwise_right_pin, GPIO_PIN_RESET);
+#endif
 
 	return false;
 }
@@ -412,6 +416,7 @@ static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, Motors
  * @brief rotate the cleaner by 90° anti-clockwise
  */
 static void turn_left(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo) {
+#ifndef __TESTING__
 	HAL_GPIO_WritePin(&motorsInfo->clockwise_left_GPIOType, motorsInfo->clockwise_left_pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(&motorsInfo->clockwise_right_GPIOType, motorsInfo->clockwise_right_pin, GPIO_PIN_SET);
 
@@ -419,6 +424,7 @@ static void turn_left(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo) {
 
 	HAL_GPIO_WritePin(&motorsInfo->clockwise_left_GPIOType, motorsInfo->clockwise_left_pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(&motorsInfo->clockwise_right_GPIOType, motorsInfo->clockwise_right_pin, GPIO_PIN_RESET);
+#endif
 
 	// adding 3 is like subtracting 1 with modulo 4
 	cleanerInfo->direction = (cleanerInfo->direction + 3) % 4;
@@ -428,6 +434,7 @@ static void turn_left(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo) {
  * @brief rotate the cleaner by 90° clockwise
  */
 static void turn_right(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo) {
+#ifndef __TESTING__
 	HAL_GPIO_WritePin(&motorsInfo->antiClockwise_left_GPIOType, motorsInfo->antiClockwise_left_pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(&motorsInfo->antiClockwise_right_GPIOType, motorsInfo->antiClockwise_right_pin, GPIO_PIN_SET);
 
@@ -435,14 +442,19 @@ static void turn_right(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo) {
 
 	HAL_GPIO_WritePin(&motorsInfo->antiClockwise_left_GPIOType, motorsInfo->antiClockwise_left_pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(&motorsInfo->antiClockwise_right_GPIOType, motorsInfo->antiClockwise_right_pin, GPIO_PIN_RESET);
+#endif
 
 	cleanerInfo->direction = (cleanerInfo->direction + 1) % 4;
 }
 
 static void enable_cleaning(CleanComponentsInfo* cleanComponentsInfo) {
+#ifndef __TESTING__
 	HAL_GPIO_WritePin(&cleanComponentsInfo->vacuum_GPIOType, cleanComponentsInfo->vacuum_pin, GPIO_PIN_SET);
+#endif
 }
 
 static void disable_cleaning(CleanComponentsInfo* cleanComponentsInfo) {
+#ifndef __TESTING__
 	HAL_GPIO_WritePin(&cleanComponentsInfo->vacuum_GPIOType, cleanComponentsInfo->vacuum_pin, GPIO_PIN_RESET);
+#endif
 }

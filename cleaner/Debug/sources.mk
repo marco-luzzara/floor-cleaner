@@ -22,6 +22,7 @@ OBJCOPY_BIN :=
 SUBDIRS := \
 Core/Src/algorithm \
 Core/Src \
+Core/Src/tests \
 Core/Startup \
 Drivers/STM32L0xx_HAL_Driver/Src \
 
