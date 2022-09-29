@@ -1,6 +1,6 @@
 SHELL=/bin/bash
 CC = gcc
-CFLAGS = -std=gnu11 -g3 -DDEBUG -D__TESTING__ -DUSE_HAL_DRIVER -DSTM32L053xx -ICore/Inc -IDrivers/STM32L0xx_HAL_Driver/Inc -IDrivers/STM32L0xx_HAL_Driver/Inc/Legacy -IDrivers/CMSIS/Device/ST/STM32L0xx/Include -IDrivers/CMSIS/Include -O0 -ffunction-sections -fdata-sections -Wall
+CFLAGS = -std=gnu11 -g3 -DDEBUG -D__TESTING__ -DUSE_HAL_DRIVER -DSTM32L053xx -ICore/Inc -IDrivers/STM32L0xx_HAL_Driver/Inc -IDrivers/STM32L0xx_HAL_Driver/Inc/Legacy -IDrivers/CMSIS/Device/ST/STM32L0xx/Include -IDrivers/CMSIS/Include -O2 -ffunction-sections -fdata-sections -Wall
 TEST_DIR = Tests
 BUILD_DIR = $(TEST_DIR)/build
 SRC_DIR = Core/Src
