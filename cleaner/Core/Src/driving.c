@@ -6,6 +6,7 @@
  */
 
 #include <math.h>
+#include <assert.h>
 #include "types/map.h"
 #include "stm32l0xx_hal.h"
 #include "types/cleaner.h"

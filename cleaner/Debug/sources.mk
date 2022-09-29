@@ -23,6 +23,7 @@ SUBDIRS := \
 Core/Src/algorithm \
 Core/Src \
 Core/Src/tests \
+Core/Src/types \
 Core/Startup \
 Drivers/STM32L0xx_HAL_Driver/Src \
 

@@ -23,7 +23,7 @@ void initialize_mapInfo(int row_count, int column_count, MapInfo* mapInfo) {
 }
 
 void start_drive_wrapper(MapInfo* mapInfo) {
-	start_drive(mapInfo, NULL, NULL, NULL);
+	//start_drive(mapInfo, NULL, NULL, NULL);
 }
 
 MU_TEST(test_check) {
