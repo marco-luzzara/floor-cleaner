@@ -67,8 +67,8 @@ int start_drive(MapInfo* mapInfo,
 		return 3;
 	mapInfo->map[start_position.row][start_position.col] = ALREADY_CLEANED;
 
-	bool is_cleaning_complete = false;
-	while (!is_cleaning_complete) {
+	bool is_cleaning_ongoing = true;
+	while (is_cleaning_ongoing) {
 		MapPosition next_cell;
 		bool is_cell_available = find_next_cell_while_cleaning(&cleanerInfo, mapInfo, &next_cell);
 
@@ -80,12 +80,12 @@ int start_drive(MapInfo* mapInfo,
 			mapInfo->map[next_cell.row][next_cell.col] = ALREADY_CLEANED;
 		}
 		else {
-			is_cleaning_complete = find_first_around_cell(&cleanerInfo.position, mapInfo, &next_cell,
+			is_cleaning_ongoing = find_first_around_cell(&cleanerInfo.position, mapInfo, &next_cell,
 					lambda(bool, (const MapInfo* inner_mapInfo, const MapPosition* target_pos), {
 						return inner_mapInfo->map[target_pos->row][target_pos->col] == TO_CLEAN;
 					}));
 
-			if (!is_cleaning_complete) {
+			if (is_cleaning_ongoing) {
 				bool can_reach_next_cell = move_cleaner_to(mapInfo, obstacle_found, motorsInfo, &cleanerInfo, &next_cell);
 				if (!can_reach_next_cell)
 					return 4;

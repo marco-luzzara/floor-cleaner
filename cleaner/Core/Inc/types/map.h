@@ -12,7 +12,7 @@
 #include "stm32l0xx_hal.h"
 #include "types/utils.h"
 
-typedef enum CellType {
+typedef enum __attribute__ ((__packed__)) CellType {
 	UNAVAILABLE = 0,
 	TO_CLEAN = 1,
 	ALREADY_CLEANED = 2,
