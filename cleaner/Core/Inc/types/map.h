@@ -33,6 +33,6 @@ typedef struct MapInfo {
 bool is_row_valid(const MapInfo* mapInfo, uint16_t row);
 bool is_column_valid(const MapInfo* mapInfo, uint16_t column);
 bool is_cell_valid(const MapInfo* mapInfo, const MapPosition* cell);
-bool are_MapPositions_equal(MapPosition* mp1, MapPosition* mp2);
+bool are_MapPositions_equal(const MapPosition* mp1, const MapPosition* mp2);
 
 #endif /* INC_TYPES_MAP_H_ */

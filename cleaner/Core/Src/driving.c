@@ -36,7 +36,7 @@ static bool move_cleaner_to(MapInfo* mapInfo,
 														bool* obstacle_found,
 														MotorsInfo* motorsInfo,
 														CleanerInfo* cleanerInfo,
-														MapPosition* target_position);
+														const MapPosition* target_position);
 static bool move_cleaner_to_adjacent_position(MapInfo* mapInfo,
 																							bool* obstacle_found,
 																						  MotorsInfo* motorsInfo,
@@ -89,6 +89,7 @@ int start_drive(MapInfo* mapInfo,
 				bool can_reach_next_cell = move_cleaner_to(mapInfo, obstacle_found, motorsInfo, &cleanerInfo, &next_cell);
 				if (!can_reach_next_cell)
 					return 4;
+				mapInfo->map[next_cell.row][next_cell.col] = ALREADY_CLEANED;
 			}
 		}
 	}
@@ -106,7 +107,7 @@ static bool move_cleaner_to(MapInfo* mapInfo,
 														bool* obstacle_found,
 														MotorsInfo* motorsInfo,
 														CleanerInfo* cleanerInfo,
-														MapPosition* target_position) {
+														const MapPosition* target_position) {
 	assert(mapInfo->map[target_position->row][target_position->col] != UNAVAILABLE);
 
 	while (!are_MapPositions_equal(&cleanerInfo->position, target_position)) {
@@ -116,7 +117,8 @@ static bool move_cleaner_to(MapInfo* mapInfo,
 			return false;
 
 		bool is_move_successful;
-		for (size_t i = 0; i < path_length; i++) {
+		// the loop starts from 1 because the path includes the current position at index 0
+		for (size_t i = 1; i < path_length; i++) {
 			is_move_successful = move_cleaner_to_adjacent_position(mapInfo,
 																														 obstacle_found,
 																														 motorsInfo,

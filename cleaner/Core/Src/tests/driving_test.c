@@ -7,6 +7,7 @@
 #ifdef __TESTING__
 
 #include <stdlib.h>
+#include <stdarg.h>
 #include "minunit.h"
 #include "driving.h"
 #include "types/map.h"
@@ -24,7 +25,7 @@ void test_teardown(void) {
 	free(mapInfo.map);
 }
 
-void initialize_mapInfo(int row_count, int column_count, const MapPosition* cleaner_pos) {
+void initialize_mapInfo(int row_count, int column_count, const MapPosition* cleaner_pos, int unavailable_count, ...) {
 	mapInfo.row_count = row_count;
 	mapInfo.column_count = column_count;
 
@@ -37,7 +38,16 @@ void initialize_mapInfo(int row_count, int column_count, const MapPosition* clea
 		}
 	}
 	map[cleaner_pos->row][cleaner_pos->col] = CLEANER_POS;
-	//
+
+	va_list unavailable_positions;
+	va_start(unavailable_positions, unavailable_count);
+
+	for (int i = 0; i < unavailable_count; i++) {
+		MapPosition unavailable_cell = va_arg(unavailable_positions, MapPosition);
+		map[unavailable_cell.row][unavailable_cell.col] = UNAVAILABLE;
+	}
+
+	va_end(unavailable_positions);
 
 	mapInfo.map = map;
 }
@@ -57,7 +67,37 @@ void start_drive_wrapper() {
 }
 
 MU_TEST(test_basic_map_no_wall) {
-	initialize_mapInfo(1, 3, &(MapPosition) { .row = 0, .col = 0 });
+	initialize_mapInfo(1, 3, &(MapPosition) { .row = 0, .col = 0 }, 0);
+	start_drive_wrapper();
+
+	assert_map_cleaned();
+}
+
+MU_TEST(test_rectangle_map_no_wall) {
+	initialize_mapInfo(3, 5, &(MapPosition) { .row = 0, .col = 0 }, 0);
+	start_drive_wrapper();
+
+	assert_map_cleaned();
+}
+
+MU_TEST(test_rectangle_map_no_wall_cleaner_start_far) {
+	initialize_mapInfo(3, 5, &(MapPosition) { .row = 2, .col = 4 }, 0);
+	start_drive_wrapper();
+
+	assert_map_cleaned();
+}
+
+/*
+ * map picture:
+	    ░░█░░X
+			░░░░░░
+			░░░░░░
+			░░█░░░
+ */
+MU_TEST(test_map_with_custom_wall) {
+	initialize_mapInfo(4, 6, &(MapPosition) { .row = 0, .col = 5 }, 2,
+			(MapPosition) { .row = 0, .col = 2},
+			(MapPosition) { .row = 3, .col = 2});
 	start_drive_wrapper();
 
 	assert_map_cleaned();
@@ -67,6 +107,9 @@ MU_TEST_SUITE(test_suite) {
 	MU_SUITE_CONFIGURE(&test_setup, &test_teardown);
 
 	MU_RUN_TEST(test_basic_map_no_wall);
+	MU_RUN_TEST(test_rectangle_map_no_wall);
+	MU_RUN_TEST(test_rectangle_map_no_wall_cleaner_start_far);
+	MU_RUN_TEST(test_map_with_custom_wall);
 }
 
 int main(int argc, char *argv[]) {
