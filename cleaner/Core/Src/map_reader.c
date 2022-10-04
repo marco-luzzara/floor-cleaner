@@ -1,13 +1,24 @@
 #include <stdlib.h>
 #include <types/map.h>
+#include <stdbool.h>
 #include "stm32l0xx_hal.h"
+
+extern bool is_data_arrived;
+
+void read_from_UART(UART_HandleTypeDef* huart, uint8_t* buffer, int buffer_length) {
+	is_data_arrived = false;
+
+	HAL_UART_Receive_DMA(huart, buffer, buffer_length);
+
+	while (!is_data_arrived);
+}
 
 /*
  * @brief read a single char from uart
  */
 static char read_char(UART_HandleTypeDef *huart) {
 	char c;
-	HAL_UART_Receive(huart, (uint8_t*)&c, 1, HAL_MAX_DELAY);
+	read_from_UART(huart, (uint8_t*)&c, 1);
 
 	return c;
 }
@@ -41,24 +52,33 @@ void initialize_map(UART_HandleTypeDef *huart, MapInfo* mapInfo) {
 	int row_count = read_number(huart);
 	int column_count = read_number(huart);
 
-	uint8_t** map = (uint8_t**)malloc(row_count * sizeof(uint8_t*));
+	// the matrix is allocated as a single array with all the memory needed.
+	// in this way the DMA can place all the received bytes directly on the matrix.
+	// map_rows contains the pointer to the other rows
+	CellType** map_rows = (CellType**)malloc(row_count * sizeof(CellType*));
 
-	for (uint16_t r = 0; r < row_count; r++)
-	{
-		map[r] = (uint8_t*)malloc(column_count * sizeof(uint8_t));
-		for (uint16_t c = 0; c < column_count; c++) {
-			char cell[] = { '\0', '\0' };
-			cell[0] = read_char(huart);
-			map[r][c] = (uint8_t) atoi(cell);
-		}
+	int map_size = row_count * column_count;
+	CellType* map = (CellType*)malloc(map_size * sizeof(CellType));
+
+	for (int r = 0; r < row_count; r++) {
+		map_rows[r] = &map[r * column_count];
 	}
+
+	read_from_UART(huart, map, map_size);
+//	for (uint16_t r = 0; r < row_count; r++) {
+//		for (uint16_t c = 0; c < column_count; c++) {
+//			char cell[] = { '\0', '\0' };
+//			cell[0] = read_char(huart);
+//			map[r][c] = (uint8_t) atoi(cell);
+//		}
+//	}
 
 	// should read flow terminator '&'
 	read_char(huart);
 
 	mapInfo->row_count = row_count;
 	mapInfo->column_count = column_count;
-	mapInfo->map = map;
+	mapInfo->map = map_rows;
 }
 
 

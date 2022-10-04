@@ -1,7 +1,8 @@
-from enum import Enum, auto
+from enum import Enum
 
 
 class CellType(Enum):
-    UNAVAILABLE = auto()
-    TO_CLEAN = auto()
-    CLEANER_POSITION = auto()
+    UNAVAILABLE = 0
+    TO_CLEAN = 1
+    # 2 is missing because ALREADY_CLEANED can be set by the cleaner only
+    CLEANER_POSITION = 3

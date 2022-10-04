@@ -44,8 +44,8 @@ class SendMapDialog(QtWidgets.QDialog):
 
             for row in cleaning_map:
                 for cell in row:
-                    cleaner_serial.write(bytes(str(cell.value), encoding='ascii'))
-            
+                    cleaner_serial.write(cell.value.to_bytes(1, byteorder='big'))
+
             cleaner_serial.write(b'&')
 
         super().accept()

@@ -7,7 +7,7 @@ SRC_DIR = Core/Src
 DRIVING_LIB_SRC = $(SRC_DIR)/driving.c $(wildcard $(SRC_DIR)/algorithm/*.c) $(SRC_DIR)/types/map.c
 DRIVING_LIB_OBJ = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(DRIVING_LIB_SRC))
 
-.PHONY: all run clean
+.PHONY: all run clean mi racc
 
 all: run
 

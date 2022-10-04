@@ -1,4 +1,4 @@
-map.c:10:13:is_row_valid	16	static
-map.c:14:13:is_column_valid	16	static
-map.c:18:13:is_cell_valid	16	static
-map.c:22:13:are_MapPositions_equal	16	static
+map.c:10:13:is_row_valid	0	static
+map.c:14:13:is_column_valid	0	static
+map.c:18:13:is_cell_valid	8	static
+map.c:22:13:are_MapPositions_equal	8	static
