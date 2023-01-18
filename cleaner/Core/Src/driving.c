@@ -355,8 +355,8 @@ static bool initialize_cleaner(MapInfo* mapInfo, CleanerInfo* cleanerInfo) {
 
 /**
  * @brief move the cleaner of one unit
- * @retval 0 - the cleaner reached the destination
- * 				 1 - an obstacle has been found, the cleaner returned to the initial position
+ * @retval true - the cleaner reached the destination
+ * 				 false - an obstacle has been found, the cleaner returned to the initial position
  */
 static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, MotorsInfo* motorsInfo) {
 	// reset obstacle_found to be sure the cleaner starts moving
@@ -365,8 +365,9 @@ static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, Motors
 
 #ifndef __TESTING__
 	// modified from HAL_Delay(Delay)
-	HAL_GPIO_WritePin(&motorsInfo->antiClockwise_left_GPIOType, motorsInfo->antiClockwise_left_pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(&motorsInfo->clockwise_right_GPIOType, motorsInfo->clockwise_right_pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(&motorsInfo->left2_GPIOType, motorsInfo->left2_pin, GPIO_PIN_SET); // ACW
+	HAL_GPIO_WritePin(&motorsInfo->right1_GPIOType, motorsInfo->right1_pin, GPIO_PIN_SET); // CW
+	// TODO: use optical encoder output to find out how many steps have been done
   uint32_t tickstart = HAL_GetTick();
   uint32_t wait = millis_to_drive;
   uint32_t undo_delay;
@@ -379,8 +380,8 @@ static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, Motors
   	}
   }
 
-  HAL_GPIO_WritePin(&motorsInfo->antiClockwise_left_GPIOType, motorsInfo->antiClockwise_left_pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(&motorsInfo->clockwise_right_GPIOType, motorsInfo->clockwise_right_pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(&motorsInfo->left2_GPIOType, motorsInfo->left2_pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(&motorsInfo->right1_GPIOType, motorsInfo->right1_pin, GPIO_PIN_RESET);
 #endif
 
   if (!undo_drive) {
@@ -402,14 +403,14 @@ static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, Motors
 
 #ifndef __TESTING__
   // drive backward because of obstacle
-  HAL_GPIO_WritePin(&motorsInfo->clockwise_left_GPIOType, motorsInfo->clockwise_left_pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(&motorsInfo->antiClockwise_right_GPIOType, motorsInfo->antiClockwise_right_pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(&motorsInfo->left1_GPIOType, motorsInfo->left1_pin, GPIO_PIN_SET); // CW
+	HAL_GPIO_WritePin(&motorsInfo->right2_GPIOType, motorsInfo->right2_pin, GPIO_PIN_SET); // ACW
 
 	// TODO: what if an obstacle is found while going back
   HAL_Delay(undo_delay);
 
-  HAL_GPIO_WritePin(&motorsInfo->clockwise_left_GPIOType, motorsInfo->clockwise_left_pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(&motorsInfo->antiClockwise_right_GPIOType, motorsInfo->antiClockwise_right_pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(&motorsInfo->left1_GPIOType, motorsInfo->left1_pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(&motorsInfo->right2_GPIOType, motorsInfo->right2_pin, GPIO_PIN_RESET);
 #endif
 
 	return false;
@@ -420,13 +421,13 @@ static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, Motors
  */
 static void turn_left(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo) {
 #ifndef __TESTING__
-	HAL_GPIO_WritePin(&motorsInfo->clockwise_left_GPIOType, motorsInfo->clockwise_left_pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(&motorsInfo->clockwise_right_GPIOType, motorsInfo->clockwise_right_pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(&motorsInfo->left1_GPIOType, motorsInfo->left1_pin, GPIO_PIN_SET); // CW
+	HAL_GPIO_WritePin(&motorsInfo->right1_GPIOType, motorsInfo->right1_pin, GPIO_PIN_SET); // CW
 
 	HAL_Delay(millis_to_turn);
 
-	HAL_GPIO_WritePin(&motorsInfo->clockwise_left_GPIOType, motorsInfo->clockwise_left_pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(&motorsInfo->clockwise_right_GPIOType, motorsInfo->clockwise_right_pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(&motorsInfo->left1_GPIOType, motorsInfo->left1_pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(&motorsInfo->right1_GPIOType, motorsInfo->right1_pin, GPIO_PIN_RESET);
 #endif
 
 	// adding 3 is like subtracting 1 with modulo 4
@@ -438,13 +439,13 @@ static void turn_left(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo) {
  */
 static void turn_right(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo) {
 #ifndef __TESTING__
-	HAL_GPIO_WritePin(&motorsInfo->antiClockwise_left_GPIOType, motorsInfo->antiClockwise_left_pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(&motorsInfo->antiClockwise_right_GPIOType, motorsInfo->antiClockwise_right_pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(&motorsInfo->left2_GPIOType, motorsInfo->left2_pin, GPIO_PIN_SET); // ACW
+	HAL_GPIO_WritePin(&motorsInfo->right2_GPIOType, motorsInfo->right2_pin, GPIO_PIN_SET); // ACW
 
 	HAL_Delay(millis_to_turn);
 
-	HAL_GPIO_WritePin(&motorsInfo->antiClockwise_left_GPIOType, motorsInfo->antiClockwise_left_pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(&motorsInfo->antiClockwise_right_GPIOType, motorsInfo->antiClockwise_right_pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(&motorsInfo->left2_GPIOType, motorsInfo->left2_pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(&motorsInfo->right2_GPIOType, motorsInfo->right2_pin, GPIO_PIN_RESET);
 #endif
 
 	cleanerInfo->direction = (cleanerInfo->direction + 1) % 4;

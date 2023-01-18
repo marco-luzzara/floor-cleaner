@@ -49,6 +49,8 @@ extern "C" {
 
 /* USER CODE END EM */
 
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
@@ -57,6 +59,22 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define MOTOR_1___IN1_Pin GPIO_PIN_0
+#define MOTOR_1___IN1_GPIO_Port GPIOC
+#define MOTOR_1___IN2_Pin GPIO_PIN_1
+#define MOTOR_1___IN2_GPIO_Port GPIOC
+#define MOTOR_2___IN3_Pin GPIO_PIN_2
+#define MOTOR_2___IN3_GPIO_Port GPIOC
+#define MOTOR_2___IN4_Pin GPIO_PIN_3
+#define MOTOR_2___IN4_GPIO_Port GPIOC
+#define MOTOR_1___Speed_Pin GPIO_PIN_0
+#define MOTOR_1___Speed_GPIO_Port GPIOA
+#define MOTOR_2___Speed_Pin GPIO_PIN_1
+#define MOTOR_2___Speed_GPIO_Port GPIOA
+#define VACUUM_Pin GPIO_PIN_11
+#define VACUUM_GPIO_Port GPIOA
+#define BUZZER_Pin GPIO_PIN_12
+#define BUZZER_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

@@ -65,13 +65,6 @@ void initialize_map(UART_HandleTypeDef *huart, MapInfo* mapInfo) {
 	}
 
 	read_from_UART(huart, map, map_size);
-//	for (uint16_t r = 0; r < row_count; r++) {
-//		for (uint16_t c = 0; c < column_count; c++) {
-//			char cell[] = { '\0', '\0' };
-//			cell[0] = read_char(huart);
-//			map[r][c] = (uint8_t) atoi(cell);
-//		}
-//	}
 
 	// should read flow terminator '&'
 	read_char(huart);
