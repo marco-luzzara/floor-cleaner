@@ -3,14 +3,8 @@
 #include <stdbool.h>
 #include "stm32l0xx_hal.h"
 
-extern bool is_data_arrived;
-
 void read_from_UART(UART_HandleTypeDef* huart, uint8_t* buffer, int buffer_length) {
-	is_data_arrived = false;
-
-	HAL_UART_Receive_DMA(huart, buffer, buffer_length);
-
-	while (!is_data_arrived);
+	HAL_UART_Receive(huart, buffer, buffer_length, HAL_MAX_DELAY);
 }
 
 /*

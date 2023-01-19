@@ -1,3 +1,3 @@
-map_reader.c:30:12:read_number	48	static
-map_reader.c:8:6:read_from_UART	8	static
-map_reader.c:46:6:initialize_map	56	static
+map_reader.c:24:12:read_number	40	static
+map_reader.c:6:6:read_from_UART	8	static
+map_reader.c:40:6:initialize_map	48	static

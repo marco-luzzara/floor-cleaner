@@ -27,6 +27,7 @@
 #include "map_reader.h"
 #include "types/map.h"
 #include "types/cleaner.h"
+#include "driving.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,7 +48,6 @@
 TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart2;
-DMA_HandleTypeDef hdma_usart2_rx;
 
 /* USER CODE BEGIN PV */
 
@@ -57,12 +57,21 @@ static void set_buzzer(int millisec) {
 	HAL_GPIO_WritePin(BUZZER_GPIO_Port, BUZZER_Pin, GPIO_PIN_RESET);
 }
 
+static void signal_cleaner_ready_for_map_receiving() {
+	set_buzzer(500);
+}
+
+static void signal_map_received() {
+	set_buzzer(500);
+	HAL_Delay(300);
+	set_buzzer(500);
+}
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
@@ -72,7 +81,6 @@ static void MX_TIM2_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-bool is_data_arrived = false;
 bool is_obstacle_found = false;
 
 /* USER CODE END 0 */
@@ -105,7 +113,6 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
@@ -114,35 +121,35 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  set_buzzer(1000);
-  MapInfo mapInfo;
-	initialize_map(&huart2, &mapInfo);
-	set_buzzer(1000);
-
-	MotorsInfo motorsInfo = {
-			.left1_GPIOType = MOTOR_1___IN1_GPIO_Port, .left1_pin = MOTOR_1___IN1_Pin,
-			.left2_GPIOType = MOTOR_1___IN2_GPIO_Port, .left2_pin = MOTOR_1___IN2_Pin,
-			.right1_GPIOType = MOTOR_2___IN3_GPIO_Port, .right1_pin = MOTOR_2___IN3_Pin,
-			.right2_GPIOType = MOTOR_2___IN4_GPIO_Port, .right2_pin = MOTOR_2___IN4_Pin,
-	};
-	CleanComponentsInfo cleanComponentsInfo = { .vacuum_GPIOType = VACUUM_GPIO_Port, .vacuum_pin = VACUUM_Pin };
-	start_drive(&mapInfo, &is_obstacle_found, &motorsInfo, &cleanComponentsInfo);
-
-//	PWM commands
-//	HAL_TIM_Base_Start(&htim2);
-//	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
-
   while (1)
   {
+  	signal_cleaner_ready_for_map_receiving();
+		MapInfo mapInfo;
+		initialize_map(&huart2, &mapInfo);
+		signal_map_received();
+
+		//	PWM commands
+		HAL_TIM_Base_Start(&htim2);
+		HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+
+		MotorsInfo motorsInfo = {
+				.left1_GPIOType = MOTOR_1___IN1_GPIO_Port, .left1_pin = MOTOR_1___IN1_Pin,
+				.left2_GPIOType = MOTOR_1___IN2_GPIO_Port, .left2_pin = MOTOR_1___IN2_Pin,
+				.right1_GPIOType = MOTOR_2___IN3_GPIO_Port, .right1_pin = MOTOR_2___IN3_Pin,
+				.right2_GPIOType = MOTOR_2___IN4_GPIO_Port, .right2_pin = MOTOR_2___IN4_Pin,
+		};
+		CleanComponentsInfo cleanComponentsInfo = { .vacuum_GPIOType = VACUUM_GPIO_Port, .vacuum_pin = VACUUM_Pin };
+		start_drive(&mapInfo, &is_obstacle_found, &motorsInfo, &cleanComponentsInfo);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
+		// deallocate the array representing the map
+		free(mapInfo.map[0]);
+		// deallocate the array of pointers to map rows
+		free(mapInfo.map);
 
-  // deallocate the array representing the map
-	free(mapInfo.map[0]);
-	// deallocate the array of pointers to map rows
-	free(mapInfo.map);
+		HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
+  }
   /* USER CODE END 3 */
 }
 
@@ -265,7 +272,7 @@ static void MX_USART2_UART_Init(void)
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.Mode = UART_MODE_RX;
   huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart2.Init.OverSampling = UART_OVERSAMPLING_16;
   huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
@@ -277,22 +284,6 @@ static void MX_USART2_UART_Init(void)
   /* USER CODE BEGIN USART2_Init 2 */
 
   /* USER CODE END USART2_Init 2 */
-
-}
-
-/**
-  * Enable DMA controller clock
-  */
-static void MX_DMA_Init(void)
-{
-
-  /* DMA controller clock enable */
-  __HAL_RCC_DMA1_CLK_ENABLE();
-
-  /* DMA interrupt init */
-  /* DMA1_Channel4_5_6_7_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel4_5_6_7_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel4_5_6_7_IRQn);
 
 }
 
@@ -332,11 +323,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-//This callback is automatically called by the HAL when the DMA transfer is completed
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-	is_data_arrived = true;
-}
 
 /* USER CODE END 4 */
 
