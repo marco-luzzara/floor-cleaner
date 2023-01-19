@@ -35,19 +35,19 @@ typedef struct CleanerInfo {
  * - IN3 and IN4 are for right
  */
 typedef struct MotorsInfo {
-  GPIO_TypeDef left1_GPIOType;
+  GPIO_TypeDef* left1_GPIOType;
   uint16_t left1_pin;
-  GPIO_TypeDef left2_GPIOType;
+  GPIO_TypeDef* left2_GPIOType;
   uint16_t left2_pin;
 
-  GPIO_TypeDef right1_GPIOType;
+  GPIO_TypeDef* right1_GPIOType;
 	uint16_t right1_pin;
-	GPIO_TypeDef right2_GPIOType;
+	GPIO_TypeDef* right2_GPIOType;
 	uint16_t right2_pin;
 } MotorsInfo;
 
 typedef struct CleanComponentsInfo {
-  GPIO_TypeDef vacuum_GPIOType;
+  GPIO_TypeDef* vacuum_GPIOType;
   uint16_t vacuum_pin;
 } CleanComponentsInfo;
 

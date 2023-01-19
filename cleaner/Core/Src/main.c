@@ -67,6 +67,14 @@ static void signal_map_received() {
 	set_buzzer(500);
 }
 
+static void signal_cleaner_error() {
+	set_buzzer(300);
+	HAL_Delay(150);
+	set_buzzer(300);
+	HAL_Delay(150);
+	set_buzzer(300);
+}
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -121,6 +129,16 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+  // testing pins
+//	HAL_TIM_Base_Start(&htim2);
+//	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+//	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
+//  HAL_GPIO_WritePin(MOTOR_1___IN1_GPIO_Port, MOTOR_1___IN1_Pin, GPIO_PIN_SET);
+//  HAL_GPIO_WritePin(MOTOR_1___IN2_GPIO_Port, MOTOR_1___IN2_Pin, GPIO_PIN_SET);
+//  HAL_GPIO_WritePin(MOTOR_2___IN3_GPIO_Port, MOTOR_2___IN3_Pin, GPIO_PIN_SET);
+//  HAL_GPIO_WritePin(MOTOR_2___IN4_GPIO_Port, MOTOR_2___IN4_Pin, GPIO_PIN_SET);
+//  HAL_GPIO_WritePin(VACUUM_GPIO_Port, VACUUM_Pin, GPIO_PIN_SET);
   while (1)
   {
   	signal_cleaner_ready_for_map_receiving();
@@ -131,6 +149,7 @@ int main(void)
 		//	PWM commands
 		HAL_TIM_Base_Start(&htim2);
 		HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+		HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
 
 		MotorsInfo motorsInfo = {
 				.left1_GPIOType = MOTOR_1___IN1_GPIO_Port, .left1_pin = MOTOR_1___IN1_Pin,
@@ -139,7 +158,10 @@ int main(void)
 				.right2_GPIOType = MOTOR_2___IN4_GPIO_Port, .right2_pin = MOTOR_2___IN4_Pin,
 		};
 		CleanComponentsInfo cleanComponentsInfo = { .vacuum_GPIOType = VACUUM_GPIO_Port, .vacuum_pin = VACUUM_Pin };
-		start_drive(&mapInfo, &is_obstacle_found, &motorsInfo, &cleanComponentsInfo);
+		int result_code = start_drive(&mapInfo, &is_obstacle_found, &motorsInfo, &cleanComponentsInfo);
+		if (result_code != 0)
+			signal_cleaner_error();
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -149,6 +171,7 @@ int main(void)
 		free(mapInfo.map);
 
 		HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
+		HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_2);
   }
   /* USER CODE END 3 */
 }
