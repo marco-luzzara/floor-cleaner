@@ -71,6 +71,8 @@ void Error_Handler(void);
 #define MOTOR_1___Speed_GPIO_Port GPIOA
 #define MOTOR_2___Speed_Pin GPIO_PIN_1
 #define MOTOR_2___Speed_GPIO_Port GPIOA
+#define START_BUTTON_Pin GPIO_PIN_10
+#define START_BUTTON_GPIO_Port GPIOA
 #define VACUUM_Pin GPIO_PIN_11
 #define VACUUM_GPIO_Port GPIOA
 #define BUZZER_Pin GPIO_PIN_12

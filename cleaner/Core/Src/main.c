@@ -146,6 +146,9 @@ int main(void)
 		initialize_map(&huart2, &mapInfo);
 		signal_map_received();
 
+		// wait for the user to click on the start button
+		while (HAL_GPIO_ReadPin(START_BUTTON_GPIO_Port, START_BUTTON_Pin) != GPIO_PIN_SET);
+		HAL_Delay(1000);
 		//	PWM commands
 		HAL_TIM_Base_Start(&htim2);
 		HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
@@ -327,7 +330,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOC, MOTOR_1___IN1_Pin|MOTOR_1___IN2_Pin|MOTOR_2___IN3_Pin|MOTOR_2___IN4_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5|VACUUM_Pin|BUZZER_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, VACUUM_Pin|BUZZER_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : MOTOR_1___IN1_Pin MOTOR_1___IN2_Pin MOTOR_2___IN3_Pin MOTOR_2___IN4_Pin */
   GPIO_InitStruct.Pin = MOTOR_1___IN1_Pin|MOTOR_1___IN2_Pin|MOTOR_2___IN3_Pin|MOTOR_2___IN4_Pin;
@@ -336,8 +339,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA5 VACUUM_Pin BUZZER_Pin */
-  GPIO_InitStruct.Pin = GPIO_PIN_5|VACUUM_Pin|BUZZER_Pin;
+  /*Configure GPIO pin : START_BUTTON_Pin */
+  GPIO_InitStruct.Pin = START_BUTTON_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(START_BUTTON_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : VACUUM_Pin BUZZER_Pin */
+  GPIO_InitStruct.Pin = VACUUM_Pin|BUZZER_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
