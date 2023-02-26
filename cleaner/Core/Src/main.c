@@ -147,7 +147,7 @@ int main(void)
 		signal_map_received();
 
 		// wait for the user to click on the start button
-		while (HAL_GPIO_ReadPin(START_BUTTON_GPIO_Port, START_BUTTON_Pin) != GPIO_PIN_SET);
+		while (HAL_GPIO_ReadPin(START_BUTTON_GPIO_Port, START_BUTTON_Pin) != GPIO_PIN_RESET);
 		HAL_Delay(1000);
 		//	PWM commands
 		HAL_TIM_Base_Start(&htim2);
@@ -260,7 +260,7 @@ static void MX_TIM2_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 1;
+  sConfigOC.Pulse = 5;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
@@ -332,6 +332,12 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, VACUUM_Pin|BUZZER_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin : START_BUTTON_Pin */
+  GPIO_InitStruct.Pin = START_BUTTON_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(START_BUTTON_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : MOTOR_1___IN1_Pin MOTOR_1___IN2_Pin MOTOR_2___IN3_Pin MOTOR_2___IN4_Pin */
   GPIO_InitStruct.Pin = MOTOR_1___IN1_Pin|MOTOR_1___IN2_Pin|MOTOR_2___IN3_Pin|MOTOR_2___IN4_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -339,11 +345,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : START_BUTTON_Pin */
-  GPIO_InitStruct.Pin = START_BUTTON_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  /*Configure GPIO pin : DISTANCE_SENSOR_Pin */
+  GPIO_InitStruct.Pin = DISTANCE_SENSOR_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(START_BUTTON_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(DISTANCE_SENSOR_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : VACUUM_Pin BUZZER_Pin */
   GPIO_InitStruct.Pin = VACUUM_Pin|BUZZER_Pin;
@@ -352,9 +358,22 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+
 }
 
 /* USER CODE BEGIN 4 */
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if(GPIO_Pin == GPIO_PIN_9) // If The INT Source Is EXTI Line9 (A9 Pin)
+	{
+		is_obstacle_found = true;
+//		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_8); // Toggle The Output (LED) Pin
+	}
+}
 
 /* USER CODE END 4 */
 

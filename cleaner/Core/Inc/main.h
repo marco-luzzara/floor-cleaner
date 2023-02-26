@@ -59,6 +59,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define START_BUTTON_Pin GPIO_PIN_13
+#define START_BUTTON_GPIO_Port GPIOC
 #define MOTOR_1___IN1_Pin GPIO_PIN_0
 #define MOTOR_1___IN1_GPIO_Port GPIOC
 #define MOTOR_1___IN2_Pin GPIO_PIN_1
@@ -71,9 +73,10 @@ void Error_Handler(void);
 #define MOTOR_1___Speed_GPIO_Port GPIOA
 #define MOTOR_2___Speed_Pin GPIO_PIN_1
 #define MOTOR_2___Speed_GPIO_Port GPIOA
-#define START_BUTTON_Pin GPIO_PIN_10
-#define START_BUTTON_GPIO_Port GPIOA
-#define VACUUM_Pin GPIO_PIN_11
+#define DISTANCE_SENSOR_Pin GPIO_PIN_9
+#define DISTANCE_SENSOR_GPIO_Port GPIOA
+#define DISTANCE_SENSOR_EXTI_IRQn EXTI4_15_IRQn
+#define VACUUM_Pin GPIO_PIN_10
 #define VACUUM_GPIO_Port GPIOA
 #define BUZZER_Pin GPIO_PIN_12
 #define BUZZER_GPIO_Port GPIOA

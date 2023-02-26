@@ -14,7 +14,7 @@
 #include "algorithm/shortest_path.h"
 
 // TODO: set based on motor rpm
-int millis_to_turn = 1000;
+int millis_to_turn = 700;
 int millis_to_drive = 1000;
 
 static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, MotorsInfo* motorsInfo);
