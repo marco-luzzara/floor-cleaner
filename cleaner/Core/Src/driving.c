@@ -14,8 +14,8 @@
 #include "algorithm/shortest_path.h"
 
 // TODO: set based on motor rpm
-int millis_to_turn = 700;
-int millis_to_drive = 1000;
+int millis_to_turn = 600;
+int millis_to_drive = 1200;
 
 static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, MotorsInfo* motorsInfo);
 static void turn_left(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo);
@@ -411,6 +411,8 @@ static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, Motors
 
   HAL_GPIO_WritePin(motorsInfo->left1_GPIOType, motorsInfo->left1_pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(motorsInfo->right2_GPIOType, motorsInfo->right2_pin, GPIO_PIN_RESET);
+
+	HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 #endif
 
 	return false;

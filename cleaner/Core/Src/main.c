@@ -75,6 +75,10 @@ static void signal_cleaner_error() {
 	set_buzzer(300);
 }
 
+static void signal_obstacle_found() {
+	set_buzzer(300);
+}
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -90,6 +94,7 @@ static void MX_TIM2_Init(void);
 /* USER CODE BEGIN 0 */
 
 bool is_obstacle_found = false;
+bool is_driving = false;
 
 /* USER CODE END 0 */
 
@@ -161,7 +166,9 @@ int main(void)
 				.right2_GPIOType = MOTOR_2___IN4_GPIO_Port, .right2_pin = MOTOR_2___IN4_Pin,
 		};
 		CleanComponentsInfo cleanComponentsInfo = { .vacuum_GPIOType = VACUUM_GPIO_Port, .vacuum_pin = VACUUM_Pin };
+		is_driving = true;
 		int result_code = start_drive(&mapInfo, &is_obstacle_found, &motorsInfo, &cleanComponentsInfo);
+		is_driving = false;
 		if (result_code != 0)
 			signal_cleaner_error();
 
@@ -260,7 +267,7 @@ static void MX_TIM2_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 5;
+  sConfigOC.Pulse = 8;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
@@ -368,10 +375,11 @@ static void MX_GPIO_Init(void)
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	if(GPIO_Pin == GPIO_PIN_9) // If The INT Source Is EXTI Line9 (A9 Pin)
+	if(GPIO_Pin == GPIO_PIN_9 && is_driving) // If The INT Source Is EXTI Line9 (A9 Pin)
 	{
+		HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
 		is_obstacle_found = true;
-//		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_8); // Toggle The Output (LED) Pin
+//		signal_obstacle_found();
 	}
 }
 
