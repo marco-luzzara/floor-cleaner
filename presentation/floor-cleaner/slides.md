@@ -47,11 +47,13 @@ image: ./images/app-create-map.png
 
 ## Python App (Map Sending)
 
-<div class="grid grid-row-2 grid-col-5">
+<div class="grid grid-row-2 grid-col-5 centered-grid">
 
   ![Initial Map](/images/initial-map.png)
 
-  <material-symbols-arrow-right-alt-rounded />
+  <material-symbols-arrow-right-alt-rounded class="text-5xl"/>
+
+  
 
 </div>
 
