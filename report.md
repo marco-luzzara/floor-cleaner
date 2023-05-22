@@ -80,7 +80,90 @@ This component is directly connected with the batteries and supplies power to:
 - The 2 motors (wheels) using the output pins from OUT1 to OUT4
 - The Nucleo board using the 5V pin, enabled via a jumper that regulates the input voltage
 
-It can receive up to 12V-2A in input from the 12V input pin and I can use the pins IN1-IN4 to control the motors direction. ENA and ENB are used to modulate the voltage that the output ports OUT1-OUT4 receive.
+I can use the pins IN1-IN4 to control the motors direction, as described by the following table:
+
+| IN1 | IN2 | Spinning direction |
+| --- | --- | ------------------ |
+| 0 | 0 | Motor OFF |
+| 0 | 1 | Backward |
+| 1 | 0 | Forward |
+| 1 | 1 | Motor OFF |
+
+ENA and ENB are used to modulate the voltage that the output ports OUT1-OUT4 receive. These pins are connected to 2 PWM enabled pins, which are A0 and A1 in the Nucleo board.
+
+#### IR Distance Sensor
+
+![IR distance sensor](./presentation/floor-cleaner/public/images/ir-distance-sensor.png)
+
+The map is built by the user, but the cleaner might find some unpredictable obstacles on its way. To avoid any collisions, an IR distance sensor is used. This sensor has 3 pins:
+
+- OUT: When a module detects an obstacle, the OUT port emits a low level signal that will be processed by the Nucleo board.
+- GND
+- VCC: this port is connected to the 3.3V pin of the Nucleo board
+
+This component also has a potentiomenter that can adjust the IR sensor sensibility. Basically, it can detect obstacle from 2cm to 30cm, depending on the potentiometer value.
+
+#### Buzzer
+
+A buzzer informs the user about the cleaner's state:
+
+- A single beep of 500ms: the cleaner is ready to receive a new map (and has successfully cleaned the previous map is present).
+- 2 beeps of 500ms, interspersed by a beep of 300ms: the cleaner has received the map and is ready to drive
+- 3 beeps of 300ms, interspersed by 2 beeps of 150ms: the cleaner has received an error while driving
+
+---
+
+### Map Processing
+
+The cleaner receives the map from the UART pin PA3. I have used the polling mode because the cleaner does not need to do anything else in the meanwhile.
+
+The reading process is optimized to speed up the data saving. In fact, after reading the `row_count` and `column_count`, I allocate 2 arrays:
+
+- `(CellType**) map_rows`: one of size `row_count` that contains the pointers to the map rows
+- `(CellType*) map`: another one of size `row_count * column_count` containing the map cells
+
+Assuming to have a map of 3 rows and 2 columns, this is how the 2 arrays are filled:
+
+```
+
+map:                                ┌───┬───┐
+                      ┌───────────> │   │   │
+                      │             ├───┼───┤
+                      │   ┌───────> │   │   │
+                      │   │         ├───┼───┤
+                      │   │   ┌───> │   │   │
+                      │   │   │     └───┴───┘
+                      │   │   │
+                      │   │   │
+                      │   │   │
+                    ┌───┬───┬───┐
+map_rows:           │   │   │   │
+                    └───┴───┴───┘
+```
+
+In this way, I can read the entire map at once by passing the `map` array as buffer. I am sure that the `map` array is a continuous block of memory, but I can access it through the `map_rows` array because it contains the pointers to the map rows.
+
+The map data are placed in a struct of type `MapInfo`:
+
+```
+typedef struct MapInfo {
+	uint8_t** map;
+	uint16_t row_count;
+	uint16_t column_count;
+} MapInfo;
+```
+
+---
+
+### Driving Preparation
+
+Once the cleaner has received the entire map, the user can instruct the cleaner to start by pressing the user button on the Nucleo board. After about 1 second, the `start_drive` method is called and the cleaner will start driving:
+
+```
+
+
+
+
 
 
 
