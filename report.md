@@ -251,8 +251,115 @@ The target position (`N`) is the first one available while visiting the square o
 └───┴───┴---┴---┴---┘
 ```
 
-The path to the target cell, which is the one having `id = 20`, then the path to reach it is finding algorithm is 
-The one I have chosen is the A* and the current implementation can be found on [this page](https://github.com/BigZaphod/AStar).
+The path to the target cell, which is the one having `id = 20`, is found by the path-finding algorithm. The one I have chosen is the A* and the current implementation can be found on [this page](https://github.com/BigZaphod/AStar).
+
+While crossing the path from a cell to a non-adjacent cell, the cleaner disables the brush because it likely crosess only already-cleaned cells. This optimization is supposed to saves some energy. The driving algorithm stops when there is no more cell to clean or when an error occurs.
+
+---
+
+### Cleaner Movements
+
+There are 3 methods that control the motors that move the cleaner. 
+
+`drive_forward` moves the cleaner of one cell along the current direction: 
+
+```
+static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, MotorsInfo* motorsInfo) {
+    *obstacle_found = false;
+    bool undo_drive = false;
+    // ...
+```
+
+`obstacle_found` is a global variable that is set when the IR distance sensor detects an obstacle. This is necessary to stop the cleaner and avoid the collision.
+
+```
+    // ...
+#ifndef __TESTING__
+	HAL_GPIO_WritePin(motorsInfo->left2_GPIOType, motorsInfo->left2_pin, GPIO_PIN_SET); // ACW
+	HAL_GPIO_WritePin(motorsInfo->right1_GPIOType, motorsInfo->right1_pin, GPIO_PIN_SET); // CW
+    uint32_t tickstart = HAL_GetTick();
+    uint32_t wait = millis_to_drive;
+    uint32_t undo_delay;
+
+    while((undo_delay = HAL_GetTick() - tickstart) < wait)
+    {
+    	if (*obstacle_found) {
+    		undo_drive = true;
+    		break;
+    	}
+    }
+
+    HAL_GPIO_WritePin(motorsInfo->left2_GPIOType, motorsInfo->left2_pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(motorsInfo->right1_GPIOType, motorsInfo->right1_pin, GPIO_PIN_RESET);
+#endif
+    // ...
+```
+
+The above code is modified from the `HAL_Delay()` method because I need to wait for `millis_to_drive` milliseconds while the motors spin and move the cleaner. However, I could need to stop the cleaner early in case of obstacle, which would set the `undo_drive` flag.
+
+```
+
+    if (!undo_drive) {
+    	uint16_t current_row = cleanerInfo->position.row;
+    	uint16_t current_col = cleanerInfo->position.col;
+
+    	switch (cleanerInfo->direction) {
+    	case UP: current_row--; break;
+    	case RIGHT: current_col++; break;
+    	case DOWN: current_row++; break;
+    	case LEFT: current_col--; break;
+    	}
+
+    	cleanerInfo->position.row = current_row;
+    	cleanerInfo->position.col = current_col;
+
+    	return true;
+    }
+
+#ifndef __TESTING__
+    // drive backward because of obstacle
+    HAL_GPIO_WritePin(motorsInfo->left1_GPIOType, motorsInfo->left1_pin, GPIO_PIN_SET); // CW
+	HAL_GPIO_WritePin(motorsInfo->right2_GPIOType, motorsInfo->right2_pin, GPIO_PIN_SET); // ACW
+
+	// TODO: what if an obstacle is found while going back
+    HAL_Delay(undo_delay);
+
+    HAL_GPIO_WritePin(motorsInfo->left1_GPIOType, motorsInfo->left1_pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(motorsInfo->right2_GPIOType, motorsInfo->right2_pin, GPIO_PIN_RESET);
+
+	HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+#endif
+
+	return false;
+}
+```
+
+Here I have 2 possible outcomes: the `undo_drive` is set, it is not. In the former case, the cleaner must move backwards and will mark the target cell as unavailable because of the obstacle found. In this case, the motors spin backwards for `undo_delay` milliseconds, which corresponds to the same time spent by the cleaner in trying to reach the target cell. When the `undo_drive` flag is clear, then the cleaner position is updated
+
+The other 2 methods to move the cleaner are `turn_left` and `turn_right`, but do not move the cleaner to another cell, they simply change its direction. The cleaner rotates clockwise or anticlockwise around its center. Here the code for the `turn_left`:
+
+```
+static void turn_left(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo) {
+#ifndef __TESTING__
+	HAL_GPIO_WritePin(motorsInfo->left1_GPIOType, motorsInfo->left1_pin, GPIO_PIN_SET); // CW
+	HAL_GPIO_WritePin(motorsInfo->right1_GPIOType, motorsInfo->right1_pin, GPIO_PIN_SET); // CW
+
+	HAL_Delay(millis_to_turn);
+
+	HAL_GPIO_WritePin(motorsInfo->left1_GPIOType, motorsInfo->left1_pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(motorsInfo->right1_GPIOType, motorsInfo->right1_pin, GPIO_PIN_RESET);
+#endif
+
+	// adding 3 is like subtracting 1 with modulo 4
+	cleanerInfo->direction = (cleanerInfo->direction + 3) % 4;
+}
+```
+
+The `__TESTING__` regions are created to disable the enclosing code when the `__TESTING__` directive is set.
+
+---
+
+### Obstacle Detection
 
 
 
