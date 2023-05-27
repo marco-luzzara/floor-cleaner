@@ -160,11 +160,99 @@ typedef struct MapInfo {
 Once the cleaner has received the entire map, the user can instruct the cleaner to start by pressing the user button on the Nucleo board. After about 1 second, the `start_drive` method is called and the cleaner will start driving:
 
 ```
+HAL_TIM_Base_Start(&htim2); // Init PWM for motors' speed modulation
+HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
 
+MotorsInfo motorsInfo = {
+		.left1_GPIOType = MOTOR_1___IN1_GPIO_Port, .left1_pin = MOTOR_1___IN1_Pin,
+        // ...
+};
+CleanComponentsInfo cleanComponentsInfo = { .vacuum_GPIOType = VACUUM_GPIO_Port, .vacuum_pin = VACUUM_Pin };
+is_driving = true;
+int result_code = start_drive(&mapInfo, &is_obstacle_found, &motorsInfo, &cleanComponentsInfo);
+```
 
+The `start_drive` method expects a list of struct that contains the components info, as well as a boolean flag, which is `is_obstacle_found`, that will be explained later.
 
+As for the `result_code`, the only successful return code is 0, whereas the other are interpreted as error codes.
 
+#### Cleaner Initialization
 
+Before starting to clean, I initialize the `CleanerInfo` struct with its initial position in the map and its direction, that by default is `UP`. If the cleaner position cannot be found in the map, the `start_drive` returns 1.
+
+#### Move Cleaner to the Start Position
+
+For simplicity, the cleaner will always start cleaning from the top-left cell of the map, or to the one nearest to it if the top-left one is unavailable. The details on how the cleaner reaches the initial position are described later in the part dedicated to the driving algorithm.
+
+If the initial position cannot be found or the cleaner cannot reach it, then the codes returned are 2 and 3, respectively.
+
+---
+
+### The Cleaning Algorithm
+
+The cleaner will clean the entire area of the map starting from the top-left cell that must be clean and proceeding to the right. The logic is very simple: the cleaner will always maintain an unavailable cell on its left. In this way, it starts from the perimeter and progressively reaches the center of the area.
+
+For the simplest case (a rectangle/square), the path that the cleaner follows is indicated by the dashed line:
+
+```
+┌───┬───┬───┬───┐
+│---│---│---│-┐ │
+├───┼───┼───┼───┤
+│ ┌-│---│-> │ │ │
+├───┼───┼───┼───┤
+│ └-│---│---│-┘ │
+└───┴───┴───┴───┘
+```
+
+As far as the next cell to clean is adjacent to the current one, the next cell position can be easily computed by inspecting the surrounding cells. However, it is not always possible to have such a linear path, for example with this map:
+
+```
+┌───┬───┐   ┌───┬───┐
+│---│-┐ │   │ ┌-│->?│
+├───┼───┼───┼───┼───┘
+│   │ └-│---│-┘ │
+├───┼───┼───┼───┤
+│   │   │   │   │
+└───┴───┴───┴───┘
+```
+
+Once the cleaner reaches the top-right cell, there is no adjacent cell available. In this case, I need to search for the nearest reachable cell that is marked as to-clean, then I need a path-finding algorithm that can take the cleaner there.
+
+The algorithm that looks for the nearest reachable cell firstly visit the square of cells that surround the current cell. If it does not find any to-clean cell, then it extends the radius of the square by 1 and so on until it finds a reachable cell (or until all the area has been cleaned). For example, in the following map:
+
+```
+┌───┬───┐   ┌───┬───┐
+│ X │ X │   │ X │ C │
+├───┼───┼───┼───┼───┘
+│   │ X │ X │ X │
+├───┼───┼───┼───┤
+│   │   │   │ N │
+└───┴───┴───┴───┘
+
+C = cleaner
+X = unavailable
+N = next position
+```
+
+The target position (`N`) is the first one available while visiting the square of radius 2 from the cleaner position. In the next map I represented the order of visit of the cells around `C` (actually, some rows and columns are discarded in advanced, like those outside the map boundaries).
+
+```
+┌---┬---┬---┬---┬---┐
+| 9 | 10| 11| 12| 13|
+├---┼---┼---┼---┼---┤
+|   | 1 | 2 | 3 | 14|
+├---┼───┼───┼---┼---┤
+|   │ 8 │ C │ 4 | 15|
+├───┼───┼───┼---┼---┤
+│   │ 7 │ 6 | 5 | 16|
+├───┼───┼---┼---┼---┤
+│   │ 20│ 19| 18| 17|
+└───┴───┴---┴---┴---┘
+```
+
+The path to the target cell, which is the one having `id = 20`, then the path to reach it is finding algorithm is 
+The one I have chosen is the A* and the current implementation can be found on [this page](https://github.com/BigZaphod/AStar).
 
 
 

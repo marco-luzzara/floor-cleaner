@@ -14,8 +14,8 @@
 #include "algorithm/shortest_path.h"
 
 // TODO: set based on motor rpm
-int millis_to_turn = 600;
-int millis_to_drive = 1200;
+int millis_to_turn = 1200;
+int millis_to_drive = 1000;
 
 static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, MotorsInfo* motorsInfo);
 static void turn_left(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo);
@@ -308,20 +308,20 @@ static bool find_first_around_cell(const MapPosition* start,
 					condition, target);
 		}
 
-		// visiting the down row
+		// visiting the down row (from right_limit down to left_limit + 1 to maintain the clockwise visiting order
 		if (!is_cell_found && is_row_valid(mapInfo, start->row + radius))
 			is_cell_found = visit_boundary_for_search(mapInfo, left_limit + 1, right_limit + 1,
 					lambda(MapPosition, (uint16_t i), {
-						MapPosition cur_cell; cur_cell.row = down_limit; cur_cell.col = i;
+						MapPosition cur_cell; cur_cell.row = down_limit; cur_cell.col = right_limit - i + left_limit + 1;
 						return cur_cell;
 					}),
 					condition, target);
 
-		// visiting the left column
+		// visiting the left column (from down_limit down to up_limit - 1)
 		if (!is_cell_found && is_column_valid(mapInfo, start->col - radius))
 			is_cell_found = visit_boundary_for_search(mapInfo, up_limit + 1, down_limit + 1,
 					lambda(MapPosition, (uint16_t i), {
-						MapPosition cur_cell; cur_cell.row = i; cur_cell.col = left_limit;
+						MapPosition cur_cell; cur_cell.row = down_limit - i + up_limit + 1; cur_cell.col = left_limit;
 						return cur_cell;
 					}),
 					condition, target);
