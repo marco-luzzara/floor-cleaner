@@ -362,8 +362,12 @@ static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, Motors
 	// reset obstacle_found to be sure the cleaner starts moving
 	*obstacle_found = false;
 	bool undo_drive = false;
+	bool was_target_reached;
 
 #ifndef __TESTING__
+	// enable the interrupt for the obstacle detection
+	HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+
 	// modified from HAL_Delay(Delay)
 	HAL_GPIO_WritePin(motorsInfo->left2_GPIOType, motorsInfo->left2_pin, GPIO_PIN_SET); // ACW
 	HAL_GPIO_WritePin(motorsInfo->right1_GPIOType, motorsInfo->right1_pin, GPIO_PIN_SET); // CW
@@ -398,24 +402,29 @@ static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, Motors
 		cleanerInfo->position.row = current_row;
 		cleanerInfo->position.col = current_col;
 
-  	return true;
+		was_target_reached = true;
+  }
+  else {
+#ifndef __TESTING__
+		// drive backward because of obstacle
+		HAL_GPIO_WritePin(motorsInfo->left1_GPIOType, motorsInfo->left1_pin, GPIO_PIN_SET); // CW
+		HAL_GPIO_WritePin(motorsInfo->right2_GPIOType, motorsInfo->right2_pin, GPIO_PIN_SET); // ACW
+
+		// TODO: what if an obstacle is found while going back
+		HAL_Delay(undo_delay);
+
+		HAL_GPIO_WritePin(motorsInfo->left1_GPIOType, motorsInfo->left1_pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(motorsInfo->right2_GPIOType, motorsInfo->right2_pin, GPIO_PIN_RESET);
+#endif
+
+		was_target_reached = false;
   }
 
 #ifndef __TESTING__
-  // drive backward because of obstacle
-  HAL_GPIO_WritePin(motorsInfo->left1_GPIOType, motorsInfo->left1_pin, GPIO_PIN_SET); // CW
-	HAL_GPIO_WritePin(motorsInfo->right2_GPIOType, motorsInfo->right2_pin, GPIO_PIN_SET); // ACW
-
-	// TODO: what if an obstacle is found while going back
-  HAL_Delay(undo_delay);
-
-  HAL_GPIO_WritePin(motorsInfo->left1_GPIOType, motorsInfo->left1_pin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(motorsInfo->right2_GPIOType, motorsInfo->right2_pin, GPIO_PIN_RESET);
-
-	HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+  HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
 #endif
 
-	return false;
+	return was_target_reached;
 }
 
 /**
