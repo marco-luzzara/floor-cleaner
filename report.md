@@ -2,6 +2,13 @@
 
 The project consists of a floor cleaner, which is controlled by a Desktop Application. The user can draw a map on this app and the robot will try to go over each available cell in the map.
 
+### Project Structure
+
+The project root folder contains:
+
+- The `app` folder with the Desktop application. Execute it with `./run.sh`
+- The `cleaner` folder with the Nucleo board source code and the tests for the algorithm used. Note: the optimization level must be set to **2** (`-O2`): *Properties* -> *C/C++ Build* -> *Settings* -> *MCU GCC Compiler* -> *Optimization* -> Set to *Optimize more (-O2)*. The C standard used is **GNU11** (`-std=gnu11`): *Properties* -> *C/C++ Build* -> *Settings* -> *MCU GCC Compiler* -> *General* -> Set the Language standard to *GNU11 (...)*.
+
 ---
 
 ## Desktop Application
@@ -386,8 +393,11 @@ This interrupt is enabled when the `drive_forward` method is called and disabled
 
 ---
 
+### Testing the Algorithm
 
+It is possible to test the driving algorithm exclusively by compiling with a slightly different option: `-D__TESTING__`. This directive hides all the `HAL_` calls and the tests just verify that, at the end, the to-clean cells have been actually cleaned. The code enclosed in the `#ifndef __TESTING__` regions is not compiled because it contains superfluous calls for the algorithm testing.
 
+The testing library is [minunit](https://github.com/siu/minunit) and tests can be run with `make run`.
 
 
 
