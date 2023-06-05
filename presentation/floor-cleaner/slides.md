@@ -96,10 +96,159 @@ with serial.Serial(port=serial_data.device, baudrate=9600) as cleaner_serial:
 
 ## Cleaner Architecture
 
-<div>
-<img src="/images/cleaner_architecture.png" class="w-140 h-100" />
+<div class="flex gap-x-10">
+<div class="drawable-container">
+  <img src="/images/cleaner_architecture.png" class="w-140 h-100" />
 
-<EmptyCircle radius="80%" xcenter="10px" ycenter="30px" />
+  <EmptyCircle xcenter="8%" ycenter="22%" width="21%" height="33%" for="battery" v-if="$slidev.nav.clicks === 1" />
+  <EmptyCircle xcenter="29%" ycenter="-5%" width="21%" height="30%" for="l298n" v-if="$slidev.nav.clicks === 2" />
+  <EmptyCircle xcenter="8%" ycenter="75%" width="16%" height="25%" for="distance-sensor" v-if="$slidev.nav.clicks === 3" />
+  <EmptyCircle xcenter="85%" ycenter="45%" width="16%" height="20%" for="vacuum" v-if="$slidev.nav.clicks === 4" />
+  <EmptyCircle xcenter="11%" ycenter="3%" width="17%" height="20%" for="left-wheel" v-if="$slidev.nav.clicks === 5" />
+  <EmptyCircle xcenter="51%" ycenter="3%" width="17%" height="20%" for="right-wheel" v-if="$slidev.nav.clicks === 6" />
+  <EmptyCircle xcenter="32%" ycenter="48%" width="10%" height="14%" for="buzzer" v-if="$slidev.nav.clicks === 7" />
+  
+</div>
+
+<v-clicks>
+
+  - Battery
+  - L298N
+  - Distance Sensor
+  - Vacuum
+  - Left wheel
+  - Right wheel
+  - Buzzer
+
+</v-clicks>
+
 </div>
 
 ---
+
+## Power Source
+
+<div class="grid grid-row-1 grid-col-3 centered-grid grid-flow-col gap-x-10">
+
+  <img v-show="[1, 2, 3].includes($slidev.nav.clicks)" src="/images/battery.png" class="w-25 h-50" />
+
+  <div v-show="[2, 3].includes($slidev.nav.clicks)" class="flex centered-flex gap-x-10">
+  <material-symbols-arrow-circle-right-rounded class="text-5xl" />
+  <img src="/images/l298n_schema.png" class="w-50 h-50" />
+  </div>
+
+  <div v-show="$slidev.nav.clicks === 3" class="flex centered-flex gap-x-10">
+  <material-symbols-arrow-circle-right-rounded class="text-5xl" />
+  <img src="/images/board_schema.png" class="w-60 h-50" />
+  </div>
+
+</div>
+
+<v-clicks class="m-10">
+
+  - 9V/1A battery
+  - L298N
+  - STM32 Board power-supplied by the E5V source
+
+</v-clicks>
+
+---
+
+## L298N
+
+<div class="flex gap-x-10">
+<div class="drawable-container">
+  <img src="/images/l298n_schema.png" />
+
+  <EmptyCircle xcenter="13%" ycenter="75%" width="27%" height="25%" for="12v-and-ground" v-if="$slidev.nav.clicks === 1" />
+  <EmptyCircle xcenter="83%" ycenter="52%" width="18%" height="26%" for="wheel-ports" v-if="$slidev.nav.clicks === 2" />
+  <EmptyCircle xcenter="0%" ycenter="53%" width="18%" height="26%" for="wheel-ports" v-if="$slidev.nav.clicks === 2" />
+  <EmptyCircle xcenter="35%" ycenter="77%" width="16%" height="23%" for="board-power-source" v-if="$slidev.nav.clicks === 3" />
+  <EmptyCircle xcenter="50%" ycenter="77%" width="40%" height="23%" for="in-ports" v-if="$slidev.nav.clicks === 4" />
+  
+</div>
+
+<v-clicks>
+
+  - 12V and Ground ports
+  - Out ports (wheels)
+  - Board source power
+  - Input ports and PWM ports
+
+</v-clicks>
+
+</div>
+
+---
+
+## Cleaning Procedure
+
+<div style="width: 100%; text-align: center">
+
+```mermaid {scale: 0.8}
+flowchart TB
+  start(((start)))
+  waitForMap["The buzzer emits a signal for 500ms
+    The cleaner is ready to receive the map"]
+  mapReceived["The cleaner receives the map and saves it
+    Emits 2 signals of 500ms each"]
+  userButtonPressed["The user press the User button
+    After 1 second the cleaner starts cleaning"]
+  errorWhileCleaning?{"Any error
+    occurred?"}
+  errorSignal[The buzzer emits 3 quick signal]
+
+  start --> waitForMap
+  waitForMap --> mapReceived
+  mapReceived --> userButtonPressed
+  userButtonPressed --> errorWhileCleaning?
+  errorWhileCleaning? -->|Yes| errorSignal --> waitForMap
+  errorWhileCleaning? -->|No| waitForMap
+  
+```
+
+</div>
+
+---
+
+## Map Saving
+
+<v-clicks>
+
+- Store the `row_count`
+- Store the `column_count`
+- Allocate 2 arrays:
+  - `(CellType**) map_rows`: one of size `row_count` that contains the pointers to the map rows
+  - `(CellType*) map`: another one of size `row_count * column_count` containing the map cells
+- Read the entire map in one shot:
+  ```c
+  HAL_UART_Receive(huart, map, row_count * column_count, HAL_MAX_DELAY);
+  ```
+
+</v-clicks>
+
+---
+
+## Cleaning Algorithm
+
+```
+┌───┬───┬───┬───┐
+│ --│---│---│-┐ │
+├───┼───┼───┼───┤
+│ ┌-│---│-> │ │ │
+├───┼───┼───┼───┤
+│ └-│---│---│-┘ │
+└───┴───┴───┴───┘
+```
+
+<div class="grid centered-grid grid-row-3 grid-col-4">
+  <Cell />
+  <Cell />
+  <Cell />
+  <Cell />
+  <Cell />
+  <Cell />
+  <Cell />
+  <Cell />
+  <Cell />
+</div>

@@ -21,3 +21,13 @@ ol {
 .slidev-vclick-prior {
     opacity: 50%;
 }
+
+.drawable-container {
+    display: inline-block;
+    position: relative;
+    overflow: hidden;
+}
+
+h2 {
+    margin-bottom: 2%;
+}

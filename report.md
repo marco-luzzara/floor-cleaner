@@ -74,7 +74,7 @@ The cleaner will go through each to-clean cell in the received grid and avoids t
 ### Architecture and Components
 The architecture is described by this Fritzing schema:
 
-![Architecture](./presentation/floor-cleaner/public/images/cleaning_robot_architecture.png)
+![Architecture](./presentation/floor-cleaner/public/images/cleaner_architecture.png)
 
 #### Power Source
 The power source consists of 2 batteries of 9V each, linked in parallel in order to increase the amperage. Each battery has an amperage of 1000mAh. Unfortunately, I have not found a light battery with a voltage of 12V, which would have increased the amount of components I could have added to the circuit.
@@ -204,7 +204,7 @@ For the simplest case (a rectangle/square), the path that the cleaner follows is
 
 ```
 ┌───┬───┬───┬───┐
-│---│---│---│-┐ │
+│ --│---│---│-┐ │
 ├───┼───┼───┼───┤
 │ ┌-│---│-> │ │ │
 ├───┼───┼───┼───┤

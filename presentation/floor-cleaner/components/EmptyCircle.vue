@@ -1,6 +1,6 @@
 <script lang="ts">
 export default {
-    props: ['radius', 'xcenter', 'ycenter']
+    props: ['width', 'height', 'xcenter', 'ycenter']
 }
 </script>
 
@@ -11,11 +11,11 @@ export default {
 <style scoped>
 .circle {
     position: absolute;
-    border-radius: v-bind(radius);
+    border-radius: 100%;
     top: v-bind(ycenter);
     left: v-bind(xcenter);
-    height: 100px;
-    width: 100px;
+    height: v-bind(height);
+    width: v-bind(width);
     border: 2px solid black;
 }
 </style>
