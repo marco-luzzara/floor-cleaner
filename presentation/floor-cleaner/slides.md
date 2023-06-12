@@ -47,7 +47,7 @@ image: ./images/app-create-map.png
 
 ## Python App (Map Conversion)
 
-<div class="grid grid-row-1 grid-col-3 grid-flow-col centered-grid gap-x-10">
+<div class="grid grid-rows-1 grid-cols-3 grid-flow-col centered-grid gap-x-10">
 
   ![Initial Map](/images/initial-map.png)
 
@@ -128,7 +128,7 @@ with serial.Serial(port=serial_data.device, baudrate=9600) as cleaner_serial:
 
 ## Power Source
 
-<div class="grid grid-row-1 grid-col-3 centered-grid grid-flow-col gap-x-10">
+<div class="grid grid-rows-1 grid-cols-3 centered-grid grid-flow-col gap-x-10">
 
   <img v-show="[1, 2, 3].includes($slidev.nav.clicks)" src="/images/battery.png" class="w-25 h-50" />
 
@@ -231,24 +231,110 @@ flowchart TB
 
 ## Cleaning Algorithm
 
-```
-┌───┬───┬───┬───┐
-│ --│---│---│-┐ │
-├───┼───┼───┼───┤
-│ ┌-│---│-> │ │ │
-├───┼───┼───┼───┤
-│ └-│---│---│-┘ │
-└───┴───┴───┴───┘
-```
+<div class="grid centered-grid grid-rows-2 grid-cols-2 gap-x-20">
 
-<div class="grid centered-grid grid-row-3 grid-col-4">
-  <Cell />
-  <Cell />
-  <Cell />
-  <Cell />
-  <Cell />
-  <Cell />
+<div id="path" class="grid grid-rows-3 grid-cols-4">
+  <Cell from="right" />
+  <Cell from="left" to="right" />
+  <Cell from="left" to="right" />
+  <Cell from="left" to="down" />
+  <Cell from="down" to="right" />
+  <Cell from="left" to="right" />
+  <Cell from="left" />
+  <Cell from="up" to="down" />
+  <Cell from="right" to="up" />
+  <Cell from="right" to="left" />
+  <Cell from="right" to="left" />
+  <Cell from="up" to="left" />
+</div>
+
+<div id="path" class="grid grid-rows-3 grid-cols-4">
+  <Cell from="down" />
+  <Cell invisible="true" />
+  <Cell from="down" to="right" />
+  <Cell from="left" to="down" />
+  <Cell from="up" to="right" />
+  <Cell from="left" to="right" />
+  <Cell from="left" to="up" />
+  <Cell from="up" centerContent="?" />
   <Cell />
   <Cell />
   <Cell />
 </div>
+
+**Simple case**: the cleaner never moves to an already-cleaned cell
+
+**Complex case**: the cleaner moves to a cell surrounded by only unavailable or already-cleaned cells
+
+</div>
+
+<style>
+  #path {
+    width: 12em;
+    height: 9em;
+  }
+</style>
+
+---
+
+## Cleaning Algorithm (Non-adjacent Cell Search)
+
+<div class="grid centered-grid grid-rows-2 grid-cols-2 gap-x-20">
+
+<div id="search" class="grid grid-rows-3 grid-cols-4">
+  <Cell centerContent="X" />
+  <Cell invisible="true" />
+  <Cell centerContent="X" />
+  <Cell centerContent="X" />
+  <Cell centerContent="X" />
+  <Cell centerContent="X" />
+  <Cell centerContent="X" />
+  <Cell centerContent="C" />
+  <Cell />
+  <Cell />
+  <Cell centerContent="N" />
+</div>
+
+```
+┌---┬---┬---┬---┬---┐
+| 9 | 10| 11| 12| 13|
+├---┼---┼---┼---┼---┤
+|   | 1 | 2 | 3 | 14|
+├---┼───┼───┼---┼---┤
+|   │ 8 │ C │ 4 | 15|
+├───┼───┼───┼---┼---┤
+│   │ 7 │ 6 | 5 | 16|
+├───┼───┼---┼---┼---┤
+│   │ 20│ 19| 18| 17|
+└───┴───┴---┴---┴---┘
+```
+
+<div id="search" class="grid grid-rows-5 grid-cols-5">
+  <Cell isDashed="true" centerContent="X" />
+  <Cell invisible="true" />
+  <Cell centerContent="X" />
+  <Cell centerContent="X" />
+  <Cell centerContent="X" />
+  <Cell centerContent="X" />
+  <Cell centerContent="X" />
+  <Cell centerContent="?" />
+  <Cell />
+  <Cell />
+  <Cell centerContent="N🞋" />
+</div>
+
+**C** is the cleaner position, while **X** represents all the already-cleaned cells
+
+</div>
+
+<style>
+  #path {
+    width: 12em;
+    height: 9em;
+  }
+
+  #search {
+    width: 8em;
+    height: 8em;
+  }
+</style>
