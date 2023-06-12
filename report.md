@@ -260,7 +260,7 @@ The target position (`N`) is the first one available while visiting the square o
 
 The path to the target cell, which is the one having `id = 20`, is found by the path-finding algorithm. The one I have chosen is the A* and the current implementation can be found on [this page](https://github.com/BigZaphod/AStar).
 
-While crossing the path from a cell to a non-adjacent cell, the cleaner disables the brush because it likely crosess only already-cleaned cells. This optimization is supposed to saves some energy. The driving algorithm stops when there is no more cell to clean or when an error occurs.
+While crossing the path from a cell to a non-adjacent cell, the cleaner disables the brush because it likely crosses only already-cleaned cells. This optimization is supposed to saves some energy. The driving algorithm stops when there is no more cell to clean or when an error occurs.
 
 ---
 

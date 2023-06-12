@@ -3,6 +3,7 @@ from PySide6 import QtCore, QtWidgets
 
 from main.util import MsgBoxUtil
 from main.components import CellsGrid, SendMapDialog
+from main.windows.RealTimeCleaningWindow import RealTimeCleaningWindow
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -55,7 +56,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if sendResult == QtWidgets.QDialog.DialogCode.Accepted:
             MsgBoxUtil.MsgBoxUtil.assert_with_timed_box('Send successful', 2000)
 
-            self.cells_grid.get_map
+            realtime_map = copy.deepcopy(self.cells_grid.get_map())
+            realtime_cleaning_window = RealTimeCleaningWindow(realtime_map, self)
+            realtime_cleaning_window.exec()
 
     @QtCore.Slot()
     def _place_cleaner(self) -> None:
