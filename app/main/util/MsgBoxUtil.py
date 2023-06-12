@@ -1,5 +1,5 @@
-from typing import Callable
-from PySide6 import QtWidgets
+from typing import Callable, Optional
+from PySide6 import QtWidgets, QtCore
 
 
 class MsgBoxUtil:
@@ -15,3 +15,18 @@ class MsgBoxUtil:
         if not assertion:
             MsgBoxUtil.info_box(err_msg, QtWidgets.QMessageBox.Icon.Critical)
             raise AssertionError(err_msg)
+
+    @staticmethod
+    def assert_with_timed_box(text: str, timeout: int, icon: QtWidgets.QMessageBox.Icon = QtWidgets.QMessageBox.Icon.NoIcon):
+        infoBox = TimerMessageBox(text, timeout)
+        infoBox.setIcon = icon
+        infoBox.exec()
+
+
+class TimerMessageBox(QtWidgets.QMessageBox):
+    def __init__(self, message: str, timeout: int, parent: Optional[QtWidgets.QWidget] = None):
+        super().__init__(parent=parent)
+        self.time_to_wait = timeout
+        self.setText(message)
+        self.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        QtCore.QTimer.singleShot(timeout, lambda: self.done(QtWidgets.QDialog.DialogCode.Accepted))
