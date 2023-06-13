@@ -8,6 +8,7 @@ import serial
 
 from main.components.SendMapDialog import SerialConnectionInfo
 from main.components.mapping.CellType import CellType
+from main.util import MsgBoxUtil
 
 MapPosition = namedtuple('MapPosition', ['r', 'c'])
 
@@ -31,7 +32,7 @@ class Command:
     '''
     id: str
 
-    def __init__(self, receiver: Any):
+    def __init__(self, receiver: Receiver):
         self.receiver = receiver
 
     def execute(self):
@@ -55,20 +56,23 @@ class WithPosition:
 class NewCleanerPositionCommand(Command, WithPosition):
     id: str = 'MOVE'
 
-    def __init__(self, receiver: Any, r: int, c: int):
-        super().__init__(receiver)
+    def __init__(self, receiver: Receiver, r: int, c: int):
+        Command.__init__(self, receiver)
         WithPosition.__init__(self, r, c)
 
     def execute(self):
-        self.receiver.
+        self.receiver.move_cleaner(self.r, self.c)
 
 
 class ObstacleCommand(Command, WithPosition):
     id: str = 'OBSTACLE'
 
-    def __init__(self, receiver: Any, r: int, c: int):
-        super().__init__(receiver)
+    def __init__(self, receiver: Receiver, r: int, c: int):
+        Command.__init__(self, receiver)
         WithPosition.__init__(self, r, c)
+
+    def execute(self):
+        self.receiver.mark_position_as_obstacle(self.r, self.c)
 
 
 @dataclass
@@ -94,34 +98,7 @@ class UndefinedCommandException(Exception):
     ...
 
 
-class CommandFactory:
-    @staticmethod
-    def _process_command(raw_command: str) -> ProcessedData:
-        params_start = raw_command.find('{')
-        if params_start == -1:
-            raise InvalidCommandException()
-        command_id = raw_command[:params_start]
-        params = ast.literal_eval(raw_command[params_start:])
-
-        return ProcessedData(command_id, params)
-
-    @staticmethod
-    def build_command(raw_command: str, window: QtWidgets.QWidget) -> Command:
-        command_data = CommandFactory._process_command(raw_command)
-        match command_data.command_id:
-            case StartCommand.id:
-                return StartCommand(window)
-            case EndCommand.id:
-                return EndCommand(window)
-            case NewCleanerPositionCommand.id:
-                return NewCleanerPositionCommand(window, int(command_data.params['r']), int(command_data.params['c']))
-            case ObstacleCommand.id:
-                return ObstacleCommand(window, int(command_data.params['r']), int(command_data.params['c']))
-            case _:
-                raise UndefinedCommandException()
-
-
-class RealTimeCleaningWindow(QtWidgets.QDialog):
+class RealTimeCleaningWindow(QtWidgets.QDialog, Receiver):
     def __init__(self, cell_types: List[List[CellType]], serial_connection_info: SerialConnectionInfo, parent: QtWidgets.QWidget):
         super().__init__(parent)
 
@@ -148,23 +125,27 @@ class RealTimeCleaningWindow(QtWidgets.QDialog):
     def _mark_cell_as_to_clean(self, r: int, c: int) -> None:
         cell = self._cells[r][c]
         self._color_cell(cell, '#9BF3FF')
+        # don't need to change the cell type because no cell can change type to "to clean"
 
     def _mark_cell_as_cleaned(self, r: int, c: int) -> None:
         cell = self._cells[r][c]
         self._color_cell(cell, '#A4F9C8')
-        self._cells[r][c] = CellType.ALREADY_CLEANED
+        self.cell_types[r][c] = CellType.ALREADY_CLEANED
 
     def _mark_cell_as_unavailable(self, r: int, c: int) -> None:
         cell = self._cells[r][c]
         self._color_cell(cell, '#F5F5F5')
+        # don't need to change the cell type because an unavailable cell remains unavailable
 
     def _mark_cell_as_cleaner_position(self, r: int, c: int) -> None:
         cell = self._cells[r][c]
         self._color_cell(cell, 'black')
+        self.cell_types[r][c] = CellType.CLEANER_POSITION
 
     def _mark_cell_as_obstacle(self, r: int, c: int) -> None:
         cell = self._cells[r][c]
         self._color_cell(cell, 'red')
+        self.cell_types[r][c] = CellType.UNAVAILABLE
 
     def _initialize_grid(self):
         for r in range(self.ROW_COUNT):
@@ -207,6 +188,35 @@ class RealTimeCleaningWindow(QtWidgets.QDialog):
 
             command = self._read_command(realtime_serial)
             while not isinstance(command, EndCommand):
-                # match type(command):
-                #     case
-                ...
+                command.execute()
+                await asyncio.sleep(0.3)
+                command = self._read_command(realtime_serial)
+
+        MsgBoxUtil.MsgBoxUtil.info_box('The cleaner completed its job')
+
+
+class CommandFactory:
+    @staticmethod
+    def _process_command(raw_command: str) -> ProcessedData:
+        params_start = raw_command.find('{')
+        if params_start == -1:
+            raise InvalidCommandException()
+        command_id = raw_command[:params_start]
+        params = ast.literal_eval(raw_command[params_start:])
+
+        return ProcessedData(command_id, params)
+
+    @staticmethod
+    def build_command(raw_command: str, window: RealTimeCleaningWindow) -> Command:
+        command_data = CommandFactory._process_command(raw_command)
+        match command_data.command_id:
+            case StartCommand.id:
+                return StartCommand(window)
+            case EndCommand.id:
+                return EndCommand(window)
+            case NewCleanerPositionCommand.id:
+                return NewCleanerPositionCommand(window, int(command_data.params['r']), int(command_data.params['c']))
+            case ObstacleCommand.id:
+                return ObstacleCommand(window, int(command_data.params['r']), int(command_data.params['c']))
+            case _:
+                raise UndefinedCommandException()
