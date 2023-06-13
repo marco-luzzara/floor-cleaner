@@ -1,8 +1,15 @@
+from dataclasses import dataclass
 from PySide6 import QtWidgets
 import serial
 from serial.tools import list_ports, list_ports_common
 
 from main.components.mapping import MapManager
+
+
+@dataclass
+class SerialConnectionInfo:
+    port_name: str
+    baudrate: int
 
 
 class SendMapDialog(QtWidgets.QDialog):
@@ -33,9 +40,10 @@ class SendMapDialog(QtWidgets.QDialog):
         self.layout().addWidget(self._button_cancel)
 
     def accept(self) -> None:
-        cleaning_map = list(map(lambda row: list(row), self._grid_widget.get_map()))
+        cleaning_map = self._grid_widget.get_map()
         serial_data: list_ports_common.ListPortInfo = self._combo_box_serial.currentData()
-        with serial.Serial(port=serial_data.device, baudrate=9600) as cleaner_serial:
+        self.serial_connection_info = SerialConnectionInfo(serial_data.device, 9600)
+        with serial.Serial(port=self.serial_connection_info.port_name, baudrate=self.serial_connection_info.baudrate) as cleaner_serial:
             cleaner_serial.write(b'&')
             cleaner_serial.write(bytes(str(len(cleaning_map)), encoding='ascii'))
             cleaner_serial.write(b'|')

@@ -97,8 +97,8 @@ class CellsGrid(MapManager.MapManager, QtWidgets.QFrame):
                                  for ir, row in enumerate(self._cells)
                                  if row[len(self._cells) - ic - 1].type is not CellType.CellType.UNAVAILABLE))
 
-        return map(lambda row: map(lambda cell: cell.type, row[min_selected_col:max_selected_col + 1]),
-                   self._cells[min_selected_row:max_selected_row + 1])
+        return list(map(lambda row: list(map(lambda cell: cell.type, row[min_selected_col:max_selected_col + 1])),
+                        self._cells[min_selected_row:max_selected_row + 1]))
 
     def start_cells_cleaner_positioning(self):
         for row in self._cells:

@@ -11,7 +11,7 @@ class MsgBoxUtil:
         infoBox.exec()
 
     @staticmethod
-    def assert_with_box(assertion: bool, err_msg: str) -> bool:
+    def assert_with_box(assertion: bool, err_msg: str):
         if not assertion:
             MsgBoxUtil.info_box(err_msg, QtWidgets.QMessageBox.Icon.Critical)
             raise AssertionError(err_msg)
@@ -19,7 +19,7 @@ class MsgBoxUtil:
     @staticmethod
     def assert_with_timed_box(text: str, timeout: int, icon: QtWidgets.QMessageBox.Icon = QtWidgets.QMessageBox.Icon.NoIcon):
         infoBox = TimerMessageBox(text, timeout)
-        infoBox.setIcon = icon
+        infoBox.setIcon(icon)
         infoBox.exec()
 
 
