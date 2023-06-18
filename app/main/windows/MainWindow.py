@@ -57,9 +57,10 @@ class MainWindow(QtWidgets.QMainWindow):
             MsgBoxUtil.MsgBoxUtil.assert_with_timed_box('Send successful', 2000)
 
             realtime_map = copy.deepcopy(self.cells_grid.get_map())
-            realtime_cleaning_window = RealTimeCleaningWindow(
+            self.realtime_cleaning_window = RealTimeCleaningWindow(
                 realtime_map, dialog_send.serial_connection_info, self)
-            realtime_cleaning_window.exec()
+            self.realtime_cleaning_window.open()
+            self.realtime_cleaning_window.listen_for_cleaner_updates()
 
     @QtCore.Slot()
     def _place_cleaner(self) -> None:

@@ -100,7 +100,9 @@ class UndefinedCommandException(Exception):
 
 class RealTimeCleaningWindow(QtWidgets.QDialog, Receiver):
     def __init__(self, cell_types: List[List[CellType]], serial_connection_info: SerialConnectionInfo, parent: QtWidgets.QWidget):
-        super().__init__(parent)
+        super().__init__(parent=parent)
+        self.setObjectName('realtime_map_dialog')
+        self.setWindowTitle('Realtime Cleaning')
 
         self.cell_types = cell_types
         self.serial_connection_info = serial_connection_info
@@ -117,7 +119,23 @@ class RealTimeCleaningWindow(QtWidgets.QDialog, Receiver):
 
         self._initialize_grid()
 
-        asyncio.run(self._update_grid_with_cleaner_movements())
+        self.resize(self.COLUMN_COUNT * 20, self.ROW_COUNT * 20)
+
+        self.threadpool = QtCore.QThreadPool()
+
+    def _execute_command(self, command: Command):
+        command.execute()
+
+    def _cleaning_complete(self):
+        MsgBoxUtil.MsgBoxUtil.info_box('The cleaner completed its job')
+        self.close()
+
+    def listen_for_cleaner_updates(self):
+        worker = RealTimeCleaningWindowWorker(self.serial_connection_info, self)
+        worker.signals.new_command.connect(self._execute_command)
+        worker.signals.completed.connect(self._cleaning_complete)
+
+        self.threadpool.start(worker)
 
     def _color_cell(self, cell: QtWidgets.QFrame, color: str):
         cell.setStyleSheet(f'background-color: {color}')
@@ -175,7 +193,27 @@ class RealTimeCleaningWindow(QtWidgets.QDialog, Receiver):
         raw_command = line.decode('ascii')[:-1]
         return CommandFactory.build_command(raw_command, self)
 
-    async def _update_grid_with_cleaner_movements(self):
+
+class RealTimeCleaningWindowWorkerSignals(QtCore.QObject):
+    new_command = QtCore.Signal(Command)
+    completed = QtCore.Signal(int)
+
+
+class RealTimeCleaningWindowWorker(QtCore.QRunnable):
+    def __init__(self, serial_connection_info: SerialConnectionInfo, owner: RealTimeCleaningWindow):
+        super().__init__()
+        self.serial_connection_info = serial_connection_info
+        self.owner = owner
+
+        self.signals = RealTimeCleaningWindowWorkerSignals()
+
+    def _read_command(self, serial: serial.Serial) -> Command:
+        line = serial.readline()
+        raw_command = line.decode('ascii')[:-1]
+        print(raw_command)
+        return CommandFactory.build_command(raw_command, self.owner)
+
+    async def _listen_for_new_commands(self) -> None:
         # Initially, there is no timeout because I have to wait for the start command
         with serial.Serial(port=self.serial_connection_info.port_name, baudrate=self.serial_connection_info.baudrate, timeout=None) as realtime_serial:
             command = self._read_command(realtime_serial)
@@ -188,11 +226,16 @@ class RealTimeCleaningWindow(QtWidgets.QDialog, Receiver):
 
             command = self._read_command(realtime_serial)
             while not isinstance(command, EndCommand):
-                command.execute()
+                self.signals.new_command.emit(command)
                 await asyncio.sleep(0.3)
                 command = self._read_command(realtime_serial)
 
-        MsgBoxUtil.MsgBoxUtil.info_box('The cleaner completed its job')
+            # TODO: return correct result code
+            self.signals.completed.emit(0)
+
+    @QtCore.Slot()
+    def run(self):
+        asyncio.run(self._listen_for_new_commands())
 
 
 class CommandFactory:
