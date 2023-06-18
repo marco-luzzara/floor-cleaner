@@ -15,6 +15,7 @@
  */
 int start_drive(MapInfo* mapInfo,
 								bool* obstacle_found,
+								UART_HandleTypeDef *huart,
 								MotorsInfo* motorsInfo,
 								CleanComponentsInfo* cleanComponentsInfo);
 

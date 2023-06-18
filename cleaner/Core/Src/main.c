@@ -17,6 +17,7 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include "map_communication.h"
 #include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -24,7 +25,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "map_reader.h"
 #include "types/map.h"
 #include "types/cleaner.h"
 #include "driving.h"
@@ -166,9 +166,13 @@ int main(void)
 				.right2_GPIOType = MOTOR_2___IN4_GPIO_Port, .right2_pin = MOTOR_2___IN4_Pin,
 		};
 		CleanComponentsInfo cleanComponentsInfo = { .vacuum_GPIOType = VACUUM_GPIO_Port, .vacuum_pin = VACUUM_Pin };
+
 		is_driving = true;
-		int result_code = start_drive(&mapInfo, &is_obstacle_found, &motorsInfo, &cleanComponentsInfo);
+		send_start_command(&huart2);
+		int result_code = start_drive(&mapInfo, &is_obstacle_found, &huart2, &motorsInfo, &cleanComponentsInfo);
 		is_driving = false;
+		send_end_command(&huart2);
+
 		if (result_code != 0)
 			signal_cleaner_error();
 
@@ -267,13 +271,14 @@ static void MX_TIM2_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 8;
+  sConfigOC.Pulse = 2;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
   {
     Error_Handler();
   }
+  sConfigOC.Pulse = 7;
   if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();

@@ -1,5 +1,5 @@
 main.c:54:13:set_buzzer	16	static
-main.c:193:6:SystemClock_Config	120	static,ignoring_inline_asm
-main.c:105:5:main	104	static,ignoring_inline_asm
-main.c:376:6:HAL_GPIO_EXTI_Callback	8	static
-main.c:392:6:Error_Handler	0	static,ignoring_inline_asm
+main.c:197:6:SystemClock_Config	120	static,ignoring_inline_asm
+main.c:105:5:main	112	static,ignoring_inline_asm
+main.c:381:6:HAL_GPIO_EXTI_Callback	8	static
+main.c:397:6:Error_Handler	0	static,ignoring_inline_asm

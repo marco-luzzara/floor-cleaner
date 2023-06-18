@@ -1,4 +1,5 @@
-Core/Src/map_reader.o: ../Core/Src/map_reader.c ../Core/Inc/types/map.h \
+Core/Src/map_communication.o: ../Core/Src/map_communication.c \
+ ../Core/Inc/types/map.h \
  ../Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal.h \
  ../Core/Inc/stm32l0xx_hal_conf.h \
  ../Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rcc.h \

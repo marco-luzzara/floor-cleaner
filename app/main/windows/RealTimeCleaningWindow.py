@@ -206,6 +206,7 @@ class RealTimeCleaningWindowWorker(QtCore.QRunnable):
         self.owner = owner
 
         self.signals = RealTimeCleaningWindowWorkerSignals()
+        print("at least created")
 
     def _read_command(self, serial: serial.Serial) -> Command:
         line = serial.readline()

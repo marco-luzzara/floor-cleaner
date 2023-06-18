@@ -1,0 +1,4 @@
+shortest_path.c:19:4:lambda$__anon$	24	static
+shortest_path.c:13:13:path_node_neighbors	96	static
+shortest_path.c:42:14:path_node_heuristic	48	static
+shortest_path.c:55:6:find_best_path	64	static
