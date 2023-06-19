@@ -15,11 +15,11 @@
 #include "map_communication.h"
 
 // TODO: set based on motor rpm
-int millis_to_turn = 100;
-int millis_to_drive = 100;
+int millis_to_turn = 500;
+int millis_to_drive = 500;
 
 static void get_next_position_while_driving_forward(CleanerInfo* cleanerInfo, MapPosition* target_position);
-static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, UART_HandleTypeDef *huart, MotorsInfo* motorsInfo);
+static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, bool cleaning_enabled, UART_HandleTypeDef *huart, MotorsInfo* motorsInfo);
 static void turn_left(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo);
 static void turn_right(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo);
 static void enable_cleaning(CleanComponentsInfo* cleanComponentsInfo);
@@ -36,12 +36,14 @@ static bool find_next_cell_while_cleaning(const CleanerInfo* cleanerInfo,
 																					MapPosition* next_cell);
 static bool move_cleaner_to(MapInfo* mapInfo,
 														bool* obstacle_found,
+														bool cleaning_enabled,
 														UART_HandleTypeDef *huart,
 														MotorsInfo* motorsInfo,
 														CleanerInfo* cleanerInfo,
 														const MapPosition* target_position);
 static bool move_cleaner_to_adjacent_position(MapInfo* mapInfo,
 																							bool* obstacle_found,
+																							bool cleaning_enabled,
 																							UART_HandleTypeDef *huart,
 																						  MotorsInfo* motorsInfo,
 																						  CleanerInfo* cleanerInfo,
@@ -64,6 +66,7 @@ int start_drive(MapInfo* mapInfo,
 
 	bool can_move_to_start_position = move_cleaner_to(mapInfo,
 																										obstacle_found,
+																										false,
 																										huart,
 																										motorsInfo,
 																										&cleanerInfo,
@@ -80,7 +83,7 @@ int start_drive(MapInfo* mapInfo,
 
 		if (is_cell_available) {
 			enable_cleaning(cleanComponentsInfo);
-			move_cleaner_to_adjacent_position(mapInfo, obstacle_found, huart, motorsInfo, &cleanerInfo, &next_cell);
+			move_cleaner_to_adjacent_position(mapInfo, obstacle_found, true, huart, motorsInfo, &cleanerInfo, &next_cell);
 			disable_cleaning(cleanComponentsInfo);
 
 			mapInfo->map[next_cell.row][next_cell.col] = ALREADY_CLEANED;
@@ -92,7 +95,7 @@ int start_drive(MapInfo* mapInfo,
 					}));
 
 			if (is_cleaning_ongoing) {
-				bool can_reach_next_cell = move_cleaner_to(mapInfo, obstacle_found, huart, motorsInfo, &cleanerInfo, &next_cell);
+				bool can_reach_next_cell = move_cleaner_to(mapInfo, obstacle_found, false, huart, motorsInfo, &cleanerInfo, &next_cell);
 				if (!can_reach_next_cell)
 					return 4;
 				mapInfo->map[next_cell.row][next_cell.col] = ALREADY_CLEANED;
@@ -111,6 +114,7 @@ int start_drive(MapInfo* mapInfo,
  */
 static bool move_cleaner_to(MapInfo* mapInfo,
 														bool* obstacle_found,
+														bool cleaning_enabled,
 														UART_HandleTypeDef *huart,
 														MotorsInfo* motorsInfo,
 														CleanerInfo* cleanerInfo,
@@ -128,6 +132,7 @@ static bool move_cleaner_to(MapInfo* mapInfo,
 		for (size_t i = 1; i < path_length; i++) {
 			is_move_successful = move_cleaner_to_adjacent_position(mapInfo,
 																														 obstacle_found,
+																														 cleaning_enabled,
 																														 huart,
 																														 motorsInfo,
 																														 cleanerInfo,
@@ -151,6 +156,7 @@ static bool move_cleaner_to(MapInfo* mapInfo,
  */
 static bool move_cleaner_to_adjacent_position(MapInfo* mapInfo,
 																							bool* obstacle_found,
+																							bool cleaning_enabled,
 																							UART_HandleTypeDef *huart,
 																						  MotorsInfo* motorsInfo,
 																						  CleanerInfo* cleanerInfo,
@@ -187,7 +193,7 @@ static bool move_cleaner_to_adjacent_position(MapInfo* mapInfo,
 	}
 
 	// now the direction is correct
-	bool is_move_successful = drive_forward(cleanerInfo, obstacle_found, huart, motorsInfo);
+	bool is_move_successful = drive_forward(cleanerInfo, obstacle_found, cleaning_enabled, huart, motorsInfo);
 	if (!is_move_successful) // an obstacle has been found
 		mapInfo->map[target_position->row][target_position->col] = UNAVAILABLE;
 
@@ -385,7 +391,7 @@ static void get_next_position_while_driving_forward(CleanerInfo* cleanerInfo, Ma
  * @retval true - the cleaner reached the destination
  * 				 false - an obstacle has been found, the cleaner returned to the initial position
  */
-static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, UART_HandleTypeDef *huart, MotorsInfo* motorsInfo) {
+static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, bool cleaning_enabled, UART_HandleTypeDef *huart, MotorsInfo* motorsInfo) {
 	// reset obstacle_found to be sure the cleaner starts moving
 	*obstacle_found = false;
 	bool undo_drive = false;
@@ -424,7 +430,7 @@ static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, UART_H
 		was_target_reached = true;
 
 #ifndef __TESTING__
-		send_new_cleaner_position_command(huart, cleanerInfo->position.row, cleanerInfo->position.col);
+		send_new_cleaner_position_command(huart, cleanerInfo->position.row, cleanerInfo->position.col, cleaning_enabled);
 #endif
   }
   else {

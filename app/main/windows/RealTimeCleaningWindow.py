@@ -2,9 +2,10 @@ import ast
 import asyncio
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, ClassVar
+from typing import Any, Dict, List
 from PySide6 import QtCore, QtWidgets
 import serial
+import datetime
 
 from main.components.SendMapDialog import SerialConnectionInfo
 from main.components.mapping.CellType import CellType
@@ -14,7 +15,7 @@ MapPosition = namedtuple('MapPosition', ['r', 'c'])
 
 
 class Receiver:
-    def move_cleaner(self, r: int, c: int):
+    def move_cleaner(self, r: int, c: int, cleaning_enabled: bool):
         raise NotImplementedError()
 
     def mark_position_as_obstacle(self, r: int, c: int):
@@ -46,6 +47,10 @@ class StartCommand(Command):
 class EndCommand(Command):
     id: str = 'END'
 
+    def __init__(self, receiver: Receiver, ret_code: int):
+        super().__init__(receiver)
+        self.ret_code = ret_code
+
 
 class WithPosition:
     def __init__(self, r: int, c: int):
@@ -56,12 +61,13 @@ class WithPosition:
 class NewCleanerPositionCommand(Command, WithPosition):
     id: str = 'MOVE'
 
-    def __init__(self, receiver: Receiver, r: int, c: int):
+    def __init__(self, receiver: Receiver, r: int, c: int, cleaning_enabled: bool):
         Command.__init__(self, receiver)
         WithPosition.__init__(self, r, c)
+        self.cleaning_enabled = cleaning_enabled
 
     def execute(self):
-        self.receiver.move_cleaner(self.r, self.c)
+        self.receiver.move_cleaner(self.r, self.c, self.cleaning_enabled)
 
 
 class ObstacleCommand(Command, WithPosition):
@@ -78,7 +84,7 @@ class ObstacleCommand(Command, WithPosition):
 @dataclass
 class ProcessedData:
     command_id: str
-    params: Dict[str, str]
+    params: Dict[str, Any]
 
 
 class InvalidCommandException(Exception):
@@ -101,7 +107,6 @@ class UndefinedCommandException(Exception):
 class RealTimeCleaningWindow(QtWidgets.QDialog, Receiver):
     def __init__(self, cell_types: List[List[CellType]], serial_connection_info: SerialConnectionInfo, parent: QtWidgets.QWidget):
         super().__init__(parent=parent)
-        self.setObjectName('realtime_map_dialog')
         self.setWindowTitle('Realtime Cleaning')
 
         self.cell_types = cell_types
@@ -111,21 +116,27 @@ class RealTimeCleaningWindow(QtWidgets.QDialog, Receiver):
         self.ROW_COUNT = len(self.cell_types)
         self.COLUMN_COUNT = len(self.cell_types[0])
 
-        self._cells = [[QtWidgets.QFrame() for c in range(self.COLUMN_COUNT)]
+        self._cells = [[self._create_QFrame() for c in range(self.COLUMN_COUNT)]
                        for r in range(self.ROW_COUNT)]
 
-        self.layout().setContentsMargins(0, 0, 0, 0)
-        self.layout().setSpacing(0)
+        self.layout().setContentsMargins(50, 50, 50, 50)
+        self.layout().setSpacing(2)
 
         self._initialize_grid()
 
-        self.resize(self.COLUMN_COUNT * 20, self.ROW_COUNT * 20)
+        self.resize(self.COLUMN_COUNT * 20 + 100, self.ROW_COUNT * 20 + 100)
+
+    def _create_QFrame(self):
+        frame = QtWidgets.QFrame()
+        self.setObjectName('realtime_cell')
+        return frame
 
     def _execute_command(self, command: Command):
         command.execute()
 
-    def _cleaning_complete(self):
-        MsgBoxUtil.MsgBoxUtil.assert_with_timed_box('The cleaner completed its job', 1500)
+    def _cleaning_complete(self, ret_code: int):
+        MsgBoxUtil.MsgBoxUtil.info_box(
+            f'The cleaner completed its job with return code: {ret_code}')
         self.close()
 
     def listen_for_cleaner_updates(self):
@@ -154,9 +165,10 @@ class RealTimeCleaningWindow(QtWidgets.QDialog, Receiver):
         # don't need to change the cell type because an unavailable cell remains unavailable
 
     def _mark_cell_as_cleaner_position(self, r: int, c: int) -> None:
+        # the cleaner position is stored locally, there is no CLEANER_POSITION type. This
+        # is done to keep the previous state of a cell before the cleaner moves to it
         cell = self._cells[r][c]
         self._color_cell(cell, 'black')
-        self.cell_types[r][c] = CellType.CLEANER_POSITION
         self.cleaner_position = MapPosition(r, c)
 
     def mark_position_as_obstacle(self, r: int, c: int) -> None:
@@ -176,13 +188,21 @@ class RealTimeCleaningWindow(QtWidgets.QDialog, Receiver):
                     case CellType.CLEANER_POSITION:
                         self._mark_cell_as_cleaner_position(r, c)
                     case _:
-                        raise RuntimeError('the grid is invalid')
+                        raise RuntimeError('invalid cell type')
 
                 self.layout().addWidget(self._cells[r][c], r, c)
 
-    def move_cleaner(self, r: int, c: int) -> None:
-        # the current position is cleaned
-        self._mark_cell_as_cleaned(self.cleaner_position.r, self.cleaner_position.c)
+    def move_cleaner(self, r: int, c: int, cleaning_enabled: bool) -> None:
+        # the current position is cleaned if cleaning_enabled
+        if cleaning_enabled:
+            self._mark_cell_as_cleaned(self.cleaner_position.r, self.cleaner_position.c)
+        else:
+            if self._cells[self.cleaner_position.r][self.cleaner_position.c] is CellType.TO_CLEAN:
+                self._mark_cell_as_to_clean(self.cleaner_position.r, self.cleaner_position.c)
+            else:
+                # self._cells[self.cleaner_position.r][self.cleaner_position.c] is CellType.ALREADY_CLEANED:
+                self._mark_cell_as_cleaned(self.cleaner_position.r, self.cleaner_position.c)
+
         # the new position of the cleaner is (r, c)
         self._mark_cell_as_cleaner_position(r, c)
 
@@ -211,6 +231,10 @@ class RealTimeCleaningWindowWorker(QtCore.QRunnable):
         print(raw_command)
         return CommandFactory.build_command(raw_command, self.owner)
 
+    def _save_cleaning_on_file(self):
+        with open(f"cleaning_{datetime.datetime.now()}", 'w') as f:
+            f.write()
+
     async def _listen_for_new_commands(self) -> None:
         # Initially, there is no timeout because I have to wait for the start command
         with serial.Serial(port=self.serial_connection_info.port_name, baudrate=self.serial_connection_info.baudrate, timeout=None) as realtime_serial:
@@ -229,7 +253,7 @@ class RealTimeCleaningWindowWorker(QtCore.QRunnable):
                 command = self._read_command(realtime_serial)
 
             # TODO: return correct result code
-            self.signals.completed.emit(0)
+            self.signals.completed.emit(command.ret_code)
 
     @QtCore.Slot()
     def run(self):
@@ -254,10 +278,13 @@ class CommandFactory:
             case StartCommand.id:
                 return StartCommand(window)
             case EndCommand.id:
-                return EndCommand(window)
+                return EndCommand(window, command_data.params['ret_code'])
             case NewCleanerPositionCommand.id:
-                return NewCleanerPositionCommand(window, int(command_data.params['r']), int(command_data.params['c']))
+                return NewCleanerPositionCommand(window,
+                                                 command_data.params['r'],
+                                                 command_data.params['c'],
+                                                 command_data.params['cleaning_enabled'])
             case ObstacleCommand.id:
-                return ObstacleCommand(window, int(command_data.params['r']), int(command_data.params['c']))
+                return ObstacleCommand(window, command_data.params['r'], command_data.params['c'])
             case _:
                 raise UndefinedCommandException()

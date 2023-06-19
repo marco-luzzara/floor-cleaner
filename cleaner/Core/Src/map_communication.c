@@ -75,6 +75,8 @@ void initialize_map(UART_HandleTypeDef *huart, MapInfo* mapInfo) {
  * cleaned cells
  */
 
+//static char dma_buffer[100];
+
 static void send_command(UART_HandleTypeDef *huart, const char* raw_command) {
 	uint8_t current_command_size = strlen(raw_command);
 	uint8_t final_command_size = current_command_size + 1; // 1 is for the \n
@@ -83,6 +85,11 @@ static void send_command(UART_HandleTypeDef *huart, const char* raw_command) {
 	strcat(buf, raw_command);
 	buf[current_command_size] = '\n';
 
+//	huart->Instance->CR3 |= USART_CR3_DMAT;
+//	while(HAL_UART_Transmit_DMA(huart, (uint8_t *) dma_buffer, final_command_size)!= HAL_OK);
+//	HAL_DMA_PollForTransfer(huart->hdmatx, HAL_DMA_FULL_TRANSFER, HAL_MAX_DELAY);
+//	huart->Instance->CR3 &= ~USART_CR3_DMAT;
+//	while(HAL_UART_Transmit_DMA(huart, (uint8_t *) dma_buffer, final_command_size)!= HAL_OK);
 	HAL_UART_Transmit(huart, (uint8_t *) buf, final_command_size, HAL_MAX_DELAY);
 }
 
@@ -91,16 +98,20 @@ void send_start_command(UART_HandleTypeDef *huart) {
 	send_command(huart, command_id);
 }
 
-void send_end_command(UART_HandleTypeDef *huart) {
-	const char* command_id = "END{}";
+void send_end_command(UART_HandleTypeDef *huart, uint8_t return_code) {
+	const size_t BUFFER_LENGTH = 40;
+	char command_id[BUFFER_LENGTH];
+
+	snprintf(command_id, BUFFER_LENGTH, "END{'ret_code':%hu}", return_code);
 	send_command(huart, command_id);
 }
 
-void send_new_cleaner_position_command(UART_HandleTypeDef *huart, uint16_t r, uint16_t c) {
-	const size_t BUFFER_LENGTH = 64;
+void send_new_cleaner_position_command(UART_HandleTypeDef *huart, uint16_t r, uint16_t c, bool cleaning_enabled) {
+	const size_t BUFFER_LENGTH = 80;
 	char command_id[BUFFER_LENGTH];
 
-	snprintf(command_id, BUFFER_LENGTH, "MOVE{'r':'%hu','c':'%hu'}", r, c);
+	snprintf(command_id, BUFFER_LENGTH, "MOVE{'r':%hu,'c':%hu,'cleaning_enabled':%s}",
+			r, c, cleaning_enabled == true ? "True" : "False");
 	send_command(huart, command_id);
 }
 
@@ -108,7 +119,7 @@ void send_obstacle_command(UART_HandleTypeDef *huart, uint16_t r, uint16_t c) {
 	const size_t BUFFER_LENGTH = 64;
 	char command_id[BUFFER_LENGTH];
 
-	snprintf(command_id, BUFFER_LENGTH, "OBSTACLE{'r':'%hu','c':'%hu'}", r, c);
+	snprintf(command_id, BUFFER_LENGTH, "OBSTACLE{'r':%hu,'c':%hu}", r, c);
 	send_command(huart, command_id);
 }
 

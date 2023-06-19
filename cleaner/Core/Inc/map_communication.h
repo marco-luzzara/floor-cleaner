@@ -14,9 +14,9 @@ void initialize_map(UART_HandleTypeDef *huart, MapInfo* mapInfo);
 
 void send_start_command(UART_HandleTypeDef *huart);
 
-void send_end_command(UART_HandleTypeDef *huart);
+void send_end_command(UART_HandleTypeDef *huart, uint8_t return_code);
 
-void send_new_cleaner_position_command(UART_HandleTypeDef *huart, uint16_t r, uint16_t c);
+void send_new_cleaner_position_command(UART_HandleTypeDef *huart, uint16_t r, uint16_t c, bool cleaning_enabled);
 
 void send_obstacle_command(UART_HandleTypeDef *huart, uint16_t r, uint16_t c);
 

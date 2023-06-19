@@ -75,9 +75,9 @@ static void signal_cleaner_error() {
 	set_buzzer(300);
 }
 
-static void signal_obstacle_found() {
-	set_buzzer(300);
-}
+//static void signal_obstacle_found() {
+//	set_buzzer(300);
+//}
 
 /* USER CODE END PV */
 
@@ -130,6 +130,9 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
+  HAL_NVIC_SetPriority(USART2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(USART2_IRQn);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -171,7 +174,7 @@ int main(void)
 		send_start_command(&huart2);
 		int result_code = start_drive(&mapInfo, &is_obstacle_found, &huart2, &motorsInfo, &cleanComponentsInfo);
 		is_driving = false;
-		send_end_command(&huart2);
+		send_end_command(&huart2, result_code);
 
 		if (result_code != 0)
 			signal_cleaner_error();
@@ -383,7 +386,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	if(GPIO_Pin == GPIO_PIN_9 && is_driving) // If The INT Source Is EXTI Line9 (A9 Pin)
 	{
 		HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
-//		is_obstacle_found = true;
+		is_obstacle_found = true;
 //		signal_obstacle_found();
 	}
 }

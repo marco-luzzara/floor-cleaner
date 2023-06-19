@@ -54,7 +54,7 @@ class MainWindow(QtWidgets.QMainWindow):
         sendResult = dialog_send.exec()
 
         if sendResult == QtWidgets.QDialog.DialogCode.Accepted:
-            MsgBoxUtil.MsgBoxUtil.assert_with_timed_box('Send successful', 2000)
+            MsgBoxUtil.MsgBoxUtil.assert_with_timed_box('Send successful', 1500)
 
             realtime_map = copy.deepcopy(self.cells_grid.get_map())
             self.realtime_cleaning_window = RealTimeCleaningWindow(

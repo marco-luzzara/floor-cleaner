@@ -5,3 +5,7 @@ QFrame#cell {
     background-color: #F5F5F5;
     border: 1px solid #EEEEEE;
 }
+
+QFrame#realtime_cell {
+    border: 1px solid #EEEEEE;
+}
