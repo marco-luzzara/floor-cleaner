@@ -1,5 +1,4 @@
-Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/map_communication.h \
- ../Core/Inc/types/map.h \
+Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal.h \
  ../Core/Inc/stm32l0xx_hal_conf.h \
  ../Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rcc.h \
@@ -30,13 +29,12 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/map_communication.h \
  ../Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_tim_ex.h \
  ../Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_uart.h \
  ../Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_uart_ex.h \
- ../Core/Inc/types/utils.h ../Core/Inc/main.h ../Core/Inc/types/map.h \
- ../Core/Inc/types/cleaner.h ../Core/Inc/driving.h \
+ ../Core/Inc/types/map.h ../Core/Inc/types/utils.h \
+ ../Core/Inc/types/cleaner.h ../Core/Inc/map_communication.h \
+ ../Core/Inc/types/map.h ../Core/Inc/driving.h \
  ../Core/Inc/types/cleaner.h
 
-../Core/Inc/map_communication.h:
-
-../Core/Inc/types/map.h:
+../Core/Inc/main.h:
 
 ../Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal.h:
 
@@ -98,13 +96,15 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/map_communication.h \
 
 ../Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_uart_ex.h:
 
-../Core/Inc/types/utils.h:
-
-../Core/Inc/main.h:
-
 ../Core/Inc/types/map.h:
 
+../Core/Inc/types/utils.h:
+
 ../Core/Inc/types/cleaner.h:
+
+../Core/Inc/map_communication.h:
+
+../Core/Inc/types/map.h:
 
 ../Core/Inc/driving.h:
 

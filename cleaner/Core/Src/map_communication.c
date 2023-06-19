@@ -76,7 +76,14 @@ void initialize_map(UART_HandleTypeDef *huart, MapInfo* mapInfo) {
  */
 
 static void send_command(UART_HandleTypeDef *huart, const char* raw_command) {
-	HAL_UART_Transmit(huart, (uint8_t *) raw_command, strlen(raw_command), HAL_MAX_DELAY);
+	uint8_t current_command_size = strlen(raw_command);
+	uint8_t final_command_size = current_command_size + 1; // 1 is for the \n
+	char buf[final_command_size];
+	memset(buf, 0, sizeof(buf));
+	strcat(buf, raw_command);
+	buf[current_command_size] = '\n';
+
+	HAL_UART_Transmit(huart, (uint8_t *) buf, final_command_size, HAL_MAX_DELAY);
 }
 
 void send_start_command(UART_HandleTypeDef *huart) {
@@ -91,16 +98,18 @@ void send_end_command(UART_HandleTypeDef *huart) {
 
 void send_new_cleaner_position_command(UART_HandleTypeDef *huart, uint16_t r, uint16_t c) {
 	const size_t BUFFER_LENGTH = 64;
-	char command_buffer[BUFFER_LENGTH];
+	char command_id[BUFFER_LENGTH];
 
-	snprintf(command_buffer, BUFFER_LENGTH, "MOVE{'r':'%hu','c';'%hu'}", r, c);
+	snprintf(command_id, BUFFER_LENGTH, "MOVE{'r':'%hu','c':'%hu'}", r, c);
+	send_command(huart, command_id);
 }
 
 void send_obstacle_command(UART_HandleTypeDef *huart, uint16_t r, uint16_t c) {
 	const size_t BUFFER_LENGTH = 64;
-	char command_buffer[BUFFER_LENGTH];
+	char command_id[BUFFER_LENGTH];
 
-	snprintf(command_buffer, BUFFER_LENGTH, "OBSTACLE{'r':'%hu','c';'%hu'}", r, c);
+	snprintf(command_id, BUFFER_LENGTH, "OBSTACLE{'r':'%hu','c':'%hu'}", r, c);
+	send_command(huart, command_id);
 }
 
 

@@ -17,7 +17,6 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include "map_communication.h"
 #include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -27,6 +26,7 @@
 #include <stdbool.h>
 #include "types/map.h"
 #include "types/cleaner.h"
+#include "map_communication.h"
 #include "driving.h"
 /* USER CODE END Includes */
 
@@ -310,7 +310,7 @@ static void MX_USART2_UART_Init(void)
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_RX;
+  huart2.Init.Mode = UART_MODE_TX_RX;
   huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart2.Init.OverSampling = UART_OVERSAMPLING_16;
   huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
@@ -383,7 +383,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	if(GPIO_Pin == GPIO_PIN_9 && is_driving) // If The INT Source Is EXTI Line9 (A9 Pin)
 	{
 		HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
-		is_obstacle_found = true;
+//		is_obstacle_found = true;
 //		signal_obstacle_found();
 	}
 }

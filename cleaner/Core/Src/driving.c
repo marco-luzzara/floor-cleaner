@@ -15,8 +15,8 @@
 #include "map_communication.h"
 
 // TODO: set based on motor rpm
-int millis_to_turn = 1000;
-int millis_to_drive = 1000;
+int millis_to_turn = 100;
+int millis_to_drive = 100;
 
 static void get_next_position_while_driving_forward(CleanerInfo* cleanerInfo, MapPosition* target_position);
 static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, UART_HandleTypeDef *huart, MotorsInfo* motorsInfo);

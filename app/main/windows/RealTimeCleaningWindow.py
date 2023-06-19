@@ -121,13 +121,11 @@ class RealTimeCleaningWindow(QtWidgets.QDialog, Receiver):
 
         self.resize(self.COLUMN_COUNT * 20, self.ROW_COUNT * 20)
 
-        self.threadpool = QtCore.QThreadPool()
-
     def _execute_command(self, command: Command):
         command.execute()
 
     def _cleaning_complete(self):
-        MsgBoxUtil.MsgBoxUtil.info_box('The cleaner completed its job')
+        MsgBoxUtil.MsgBoxUtil.assert_with_timed_box('The cleaner completed its job', 1500)
         self.close()
 
     def listen_for_cleaner_updates(self):
@@ -135,32 +133,33 @@ class RealTimeCleaningWindow(QtWidgets.QDialog, Receiver):
         worker.signals.new_command.connect(self._execute_command)
         worker.signals.completed.connect(self._cleaning_complete)
 
-        self.threadpool.start(worker)
+        QtCore.QThreadPool.globalInstance().start(worker)
 
     def _color_cell(self, cell: QtWidgets.QFrame, color: str):
         cell.setStyleSheet(f'background-color: {color}')
 
     def _mark_cell_as_to_clean(self, r: int, c: int) -> None:
         cell = self._cells[r][c]
-        self._color_cell(cell, '#9BF3FF')
+        self._color_cell(cell, '#9BF3FF')  # light blue
         # don't need to change the cell type because no cell can change type to "to clean"
 
     def _mark_cell_as_cleaned(self, r: int, c: int) -> None:
         cell = self._cells[r][c]
-        self._color_cell(cell, '#A4F9C8')
+        self._color_cell(cell, '#00E661')  # green
         self.cell_types[r][c] = CellType.ALREADY_CLEANED
 
     def _mark_cell_as_unavailable(self, r: int, c: int) -> None:
         cell = self._cells[r][c]
-        self._color_cell(cell, '#F5F5F5')
+        self._color_cell(cell, '#F5F5F5')  # grey
         # don't need to change the cell type because an unavailable cell remains unavailable
 
     def _mark_cell_as_cleaner_position(self, r: int, c: int) -> None:
         cell = self._cells[r][c]
         self._color_cell(cell, 'black')
         self.cell_types[r][c] = CellType.CLEANER_POSITION
+        self.cleaner_position = MapPosition(r, c)
 
-    def _mark_cell_as_obstacle(self, r: int, c: int) -> None:
+    def mark_position_as_obstacle(self, r: int, c: int) -> None:
         cell = self._cells[r][c]
         self._color_cell(cell, 'red')
         self.cell_types[r][c] = CellType.UNAVAILABLE
@@ -176,7 +175,6 @@ class RealTimeCleaningWindow(QtWidgets.QDialog, Receiver):
                         self._mark_cell_as_unavailable(r, c)
                     case CellType.CLEANER_POSITION:
                         self._mark_cell_as_cleaner_position(r, c)
-                        self.cleaner_position = MapPosition(r, c)
                     case _:
                         raise RuntimeError('the grid is invalid')
 
@@ -206,7 +204,6 @@ class RealTimeCleaningWindowWorker(QtCore.QRunnable):
         self.owner = owner
 
         self.signals = RealTimeCleaningWindowWorkerSignals()
-        print("at least created")
 
     def _read_command(self, serial: serial.Serial) -> Command:
         line = serial.readline()
