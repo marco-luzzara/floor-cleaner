@@ -95,8 +95,6 @@ int start_drive(MapInfo* mapInfo,
 			enable_cleaning(cleanComponentsInfo);
 			move_cleaner_to_adjacent_position(mapInfo, obstacle_found, true, huart, lcd, motorsInfo, &cleanerInfo, &next_cell);
 			disable_cleaning(cleanComponentsInfo);
-
-			mapInfo->map[next_cell.row][next_cell.col] = ALREADY_CLEANED;
 		}
 		else {
 			is_cleaning_ongoing = find_first_around_cell(&cleanerInfo.position, mapInfo, &next_cell,
@@ -207,6 +205,8 @@ static bool move_cleaner_to_adjacent_position(MapInfo* mapInfo,
 
 	// now the direction is correct
 	bool is_move_successful = drive_forward(cleanerInfo, obstacle_found, cleaning_enabled, huart, lcd, motorsInfo);
+	if (is_move_successful && cleaning_enabled)
+		mapInfo->map[target_position->row][target_position->col] = ALREADY_CLEANED;
 	if (!is_move_successful) // an obstacle has been found
 		mapInfo->map[target_position->row][target_position->col] = UNAVAILABLE;
 
