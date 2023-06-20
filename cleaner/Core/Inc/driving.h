@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include "types/map.h"
 #include "types/cleaner.h"
+#include "lcd.h"
 
 /**
  * @brief starts to drive
@@ -16,6 +17,7 @@
 int start_drive(MapInfo* mapInfo,
 								bool* obstacle_found,
 								UART_HandleTypeDef *huart,
+								Lcd_HandleTypeDef* lcd,
 								MotorsInfo* motorsInfo,
 								CleanComponentsInfo* cleanComponentsInfo);
 

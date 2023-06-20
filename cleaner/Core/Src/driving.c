@@ -13,15 +13,21 @@
 #include "types/utils.h"
 #include "algorithm/shortest_path.h"
 #include "map_communication.h"
+#include "lcd.h"
 
 // TODO: set based on motor rpm
-int millis_to_turn = 500;
-int millis_to_drive = 500;
+int millis_to_turn = 750;
+int millis_to_drive = 750;
 
 static void get_next_position_while_driving_forward(CleanerInfo* cleanerInfo, MapPosition* target_position);
-static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, bool cleaning_enabled, UART_HandleTypeDef *huart, MotorsInfo* motorsInfo);
-static void turn_left(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo);
-static void turn_right(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo);
+static bool drive_forward(CleanerInfo* cleanerInfo,
+													bool* obstacle_found,
+													bool cleaning_enabled,
+													UART_HandleTypeDef *huart,
+													Lcd_HandleTypeDef* lcd,
+													MotorsInfo* motorsInfo);
+static void turn_left(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo, Lcd_HandleTypeDef* lcd);
+static void turn_right(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo, Lcd_HandleTypeDef* lcd);
 static void enable_cleaning(CleanComponentsInfo* cleanComponentsInfo);
 static void disable_cleaning(CleanComponentsInfo* cleanComponentsInfo);
 static bool initialize_cleaner(MapInfo* mapInfo, CleanerInfo* cleanerInfo);
@@ -38,6 +44,7 @@ static bool move_cleaner_to(MapInfo* mapInfo,
 														bool* obstacle_found,
 														bool cleaning_enabled,
 														UART_HandleTypeDef *huart,
+														Lcd_HandleTypeDef* lcd,
 														MotorsInfo* motorsInfo,
 														CleanerInfo* cleanerInfo,
 														const MapPosition* target_position);
@@ -45,6 +52,7 @@ static bool move_cleaner_to_adjacent_position(MapInfo* mapInfo,
 																							bool* obstacle_found,
 																							bool cleaning_enabled,
 																							UART_HandleTypeDef *huart,
+																							Lcd_HandleTypeDef* lcd,
 																						  MotorsInfo* motorsInfo,
 																						  CleanerInfo* cleanerInfo,
 																						  MapPosition* target_position);
@@ -52,6 +60,7 @@ static bool move_cleaner_to_adjacent_position(MapInfo* mapInfo,
 int start_drive(MapInfo* mapInfo,
 								bool* obstacle_found,
 								UART_HandleTypeDef *huart,
+								Lcd_HandleTypeDef* lcd,
 								MotorsInfo* motorsInfo,
 								CleanComponentsInfo* cleanComponentsInfo) {
 	CleanerInfo cleanerInfo;
@@ -68,6 +77,7 @@ int start_drive(MapInfo* mapInfo,
 																										obstacle_found,
 																										false,
 																										huart,
+																										lcd,
 																										motorsInfo,
 																										&cleanerInfo,
 																										&start_position);
@@ -83,7 +93,7 @@ int start_drive(MapInfo* mapInfo,
 
 		if (is_cell_available) {
 			enable_cleaning(cleanComponentsInfo);
-			move_cleaner_to_adjacent_position(mapInfo, obstacle_found, true, huart, motorsInfo, &cleanerInfo, &next_cell);
+			move_cleaner_to_adjacent_position(mapInfo, obstacle_found, true, huart, lcd, motorsInfo, &cleanerInfo, &next_cell);
 			disable_cleaning(cleanComponentsInfo);
 
 			mapInfo->map[next_cell.row][next_cell.col] = ALREADY_CLEANED;
@@ -95,7 +105,7 @@ int start_drive(MapInfo* mapInfo,
 					}));
 
 			if (is_cleaning_ongoing) {
-				bool can_reach_next_cell = move_cleaner_to(mapInfo, obstacle_found, false, huart, motorsInfo, &cleanerInfo, &next_cell);
+				bool can_reach_next_cell = move_cleaner_to(mapInfo, obstacle_found, false, huart, lcd, motorsInfo, &cleanerInfo, &next_cell);
 				if (!can_reach_next_cell)
 					return 4;
 				mapInfo->map[next_cell.row][next_cell.col] = ALREADY_CLEANED;
@@ -116,6 +126,7 @@ static bool move_cleaner_to(MapInfo* mapInfo,
 														bool* obstacle_found,
 														bool cleaning_enabled,
 														UART_HandleTypeDef *huart,
+														Lcd_HandleTypeDef* lcd,
 														MotorsInfo* motorsInfo,
 														CleanerInfo* cleanerInfo,
 														const MapPosition* target_position) {
@@ -134,6 +145,7 @@ static bool move_cleaner_to(MapInfo* mapInfo,
 																														 obstacle_found,
 																														 cleaning_enabled,
 																														 huart,
+																														 lcd,
 																														 motorsInfo,
 																														 cleanerInfo,
 																														 &path[i]);
@@ -158,6 +170,7 @@ static bool move_cleaner_to_adjacent_position(MapInfo* mapInfo,
 																							bool* obstacle_found,
 																							bool cleaning_enabled,
 																							UART_HandleTypeDef *huart,
+																							Lcd_HandleTypeDef* lcd,
 																						  MotorsInfo* motorsInfo,
 																						  CleanerInfo* cleanerInfo,
 																						  MapPosition* target_position) {
@@ -185,15 +198,15 @@ static bool move_cleaner_to_adjacent_position(MapInfo* mapInfo,
 		  (current_dir == RIGHT && target_dir == DOWN) ||
 		  (current_dir == DOWN && target_dir == LEFT) ||
 		  (current_dir == LEFT && target_dir == UP)) {
-		turn_right(cleanerInfo, motorsInfo);
+		turn_right(cleanerInfo, motorsInfo, lcd);
 	}
 	else if (current_dir != target_dir) {
 		while (cleanerInfo->direction != target_dir)
-			turn_left(cleanerInfo, motorsInfo);
+			turn_left(cleanerInfo, motorsInfo, lcd);
 	}
 
 	// now the direction is correct
-	bool is_move_successful = drive_forward(cleanerInfo, obstacle_found, cleaning_enabled, huart, motorsInfo);
+	bool is_move_successful = drive_forward(cleanerInfo, obstacle_found, cleaning_enabled, huart, lcd, motorsInfo);
 	if (!is_move_successful) // an obstacle has been found
 		mapInfo->map[target_position->row][target_position->col] = UNAVAILABLE;
 
@@ -391,7 +404,12 @@ static void get_next_position_while_driving_forward(CleanerInfo* cleanerInfo, Ma
  * @retval true - the cleaner reached the destination
  * 				 false - an obstacle has been found, the cleaner returned to the initial position
  */
-static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, bool cleaning_enabled, UART_HandleTypeDef *huart, MotorsInfo* motorsInfo) {
+static bool drive_forward(CleanerInfo* cleanerInfo,
+													bool* obstacle_found,
+													bool cleaning_enabled,
+													UART_HandleTypeDef *huart,
+													Lcd_HandleTypeDef* lcd,
+													MotorsInfo* motorsInfo) {
 	// reset obstacle_found to be sure the cleaner starts moving
 	*obstacle_found = false;
 	bool undo_drive = false;
@@ -431,6 +449,7 @@ static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, bool c
 
 #ifndef __TESTING__
 		send_new_cleaner_position_command(huart, cleanerInfo->position.row, cleanerInfo->position.col, cleaning_enabled);
+		Lcd_clear_and_write(lcd, "Going forward");
 #endif
   }
   else {
@@ -447,6 +466,7 @@ static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, bool c
 
 		// the next position is the obstacle
 		send_obstacle_command(huart, next_position.row, next_position.col);
+		Lcd_clear_and_write(lcd, "Obstacle found");
 #endif
 
 		was_target_reached = false;
@@ -462,7 +482,7 @@ static bool drive_forward(CleanerInfo* cleanerInfo, bool* obstacle_found, bool c
 /**
  * @brief rotate the cleaner by 90° anti-clockwise
  */
-static void turn_left(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo) {
+static void turn_left(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo, Lcd_HandleTypeDef* lcd) {
 #ifndef __TESTING__
 	HAL_GPIO_WritePin(motorsInfo->left1_GPIOType, motorsInfo->left1_pin, GPIO_PIN_SET); // CW
 	HAL_GPIO_WritePin(motorsInfo->right1_GPIOType, motorsInfo->right1_pin, GPIO_PIN_SET); // CW
@@ -471,6 +491,8 @@ static void turn_left(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo) {
 
 	HAL_GPIO_WritePin(motorsInfo->left1_GPIOType, motorsInfo->left1_pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(motorsInfo->right1_GPIOType, motorsInfo->right1_pin, GPIO_PIN_RESET);
+
+	Lcd_clear_and_write(lcd, "Turning left");
 #endif
 
 	// adding 3 is like subtracting 1 with modulo 4
@@ -480,7 +502,7 @@ static void turn_left(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo) {
 /**
  * @brief rotate the cleaner by 90° clockwise
  */
-static void turn_right(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo) {
+static void turn_right(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo, Lcd_HandleTypeDef* lcd) {
 #ifndef __TESTING__
 	HAL_GPIO_WritePin(motorsInfo->left2_GPIOType, motorsInfo->left2_pin, GPIO_PIN_SET); // ACW
 	HAL_GPIO_WritePin(motorsInfo->right2_GPIOType, motorsInfo->right2_pin, GPIO_PIN_SET); // ACW
@@ -489,6 +511,8 @@ static void turn_right(CleanerInfo* cleanerInfo, MotorsInfo* motorsInfo) {
 
 	HAL_GPIO_WritePin(motorsInfo->left2_GPIOType, motorsInfo->left2_pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(motorsInfo->right2_GPIOType, motorsInfo->right2_pin, GPIO_PIN_RESET);
+
+	Lcd_clear_and_write(lcd, "Turning right");
 #endif
 
 	cleanerInfo->direction = (cleanerInfo->direction + 1) % 4;

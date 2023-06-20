@@ -28,6 +28,7 @@
 #include "types/cleaner.h"
 #include "map_communication.h"
 #include "driving.h"
+#include "lcd.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -130,8 +131,14 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
-  HAL_NVIC_SetPriority(USART2_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(USART2_IRQn);
+  // https://www.micropeta.com/video60
+	// Lcd_PortType ports[] = { D4_GPIO_Port, D5_GPIO_Port, D6_GPIO_Port, D7_GPIO_Port };
+	Lcd_PortType lcd_ports[] = { D4_GPIO_Port, D5_GPIO_Port, D6_GPIO_Port, D7_GPIO_Port };
+	// Lcd_PinType pins[] = {D4_Pin, D5_Pin, D6_Pin, D7_Pin};
+	Lcd_PinType lcd_pins[] = { D4_Pin, D5_Pin, D6_Pin, D7_Pin };
+	Lcd_HandleTypeDef lcd;
+	// Lcd_create(ports, pins, RS_GPIO_Port, RS_Pin, EN_GPIO_Port, EN_Pin, LCD_4_BIT_MODE);
+	lcd = Lcd_create(lcd_ports, lcd_pins, RS_GPIO_Port, RS_Pin, E_GPIO_Port, E_Pin, LCD_4_BIT_MODE);
 
   /* USER CODE END 2 */
 
@@ -147,13 +154,22 @@ int main(void)
 //  HAL_GPIO_WritePin(MOTOR_2___IN3_GPIO_Port, MOTOR_2___IN3_Pin, GPIO_PIN_SET);
 //  HAL_GPIO_WritePin(MOTOR_2___IN4_GPIO_Port, MOTOR_2___IN4_Pin, GPIO_PIN_SET);
 //  HAL_GPIO_WritePin(VACUUM_GPIO_Port, VACUUM_Pin, GPIO_PIN_SET);
+//  HAL_GPIO_WritePin(D4_GPIO_Port, D4_Pin, GPIO_PIN_SET);
+//	HAL_GPIO_WritePin(D5_GPIO_Port, D5_Pin, GPIO_PIN_SET);
+//	HAL_GPIO_WritePin(D6_GPIO_Port, D6_Pin, GPIO_PIN_SET);
+//	HAL_GPIO_WritePin(D7_GPIO_Port, D7_Pin, GPIO_PIN_SET);
+//	HAL_GPIO_WritePin(RS_GPIO_Port, RS_Pin, GPIO_PIN_SET);
+//	HAL_GPIO_WritePin(E_GPIO_Port, E_Pin, GPIO_PIN_SET);
   while (1)
   {
+		Lcd_clear_and_write(&lcd, "Waiting for map");
+
   	signal_cleaner_ready_for_map_receiving();
 		MapInfo mapInfo;
 		initialize_map(&huart2, &mapInfo);
 		signal_map_received();
 
+		Lcd_clear_and_write(&lcd, "Press the user button to start");
 		// wait for the user to click on the start button
 		while (HAL_GPIO_ReadPin(START_BUTTON_GPIO_Port, START_BUTTON_Pin) != GPIO_PIN_RESET);
 		HAL_Delay(1000);
@@ -171,13 +187,19 @@ int main(void)
 		CleanComponentsInfo cleanComponentsInfo = { .vacuum_GPIOType = VACUUM_GPIO_Port, .vacuum_pin = VACUUM_Pin };
 
 		is_driving = true;
+
+		Lcd_clear_and_write(&lcd, "Start cleaning");
 		send_start_command(&huart2);
-		int result_code = start_drive(&mapInfo, &is_obstacle_found, &huart2, &motorsInfo, &cleanComponentsInfo);
+		int result_code = start_drive(&mapInfo, &is_obstacle_found, &huart2, &lcd, &motorsInfo, &cleanComponentsInfo);
 		is_driving = false;
 		send_end_command(&huart2, result_code);
 
 		if (result_code != 0)
 			signal_cleaner_error();
+
+		char end_cleaning_message[33];
+		snprintf(end_cleaning_message, 32, "Cleaning complete with code %d", result_code);
+		Lcd_clear_and_write(&lcd, end_cleaning_message);
 
     /* USER CODE END WHILE */
 
@@ -189,6 +211,8 @@ int main(void)
 
 		HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
 		HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_2);
+
+		HAL_Delay(2000); // wait for the user to see the result code
   }
   /* USER CODE END 3 */
 }
@@ -340,12 +364,17 @@ static void MX_GPIO_Init(void)
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, MOTOR_1___IN1_Pin|MOTOR_1___IN2_Pin|MOTOR_2___IN3_Pin|MOTOR_2___IN4_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, VACUUM_Pin|BUZZER_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, D4_Pin|D5_Pin|D6_Pin|D7_Pin
+                          |E_Pin|RS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : START_BUTTON_Pin */
   GPIO_InitStruct.Pin = START_BUTTON_Pin;
@@ -373,6 +402,15 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : D4_Pin D5_Pin D6_Pin D7_Pin
+                           E_Pin RS_Pin */
+  GPIO_InitStruct.Pin = D4_Pin|D5_Pin|D6_Pin|D7_Pin
+                          |E_Pin|RS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
@@ -387,7 +425,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	{
 		HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
 		is_obstacle_found = true;
-//		signal_obstacle_found();
 	}
 }
 

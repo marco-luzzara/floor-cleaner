@@ -187,6 +187,7 @@ class RealTimeCleaningWindow(QtWidgets.QDialog, Receiver):
                         self._mark_cell_as_unavailable(r, c)
                     case CellType.CLEANER_POSITION:
                         self._mark_cell_as_cleaner_position(r, c)
+                        self.cell_types[r][c] = CellType.TO_CLEAN
                     case _:
                         raise RuntimeError('invalid cell type')
 
@@ -197,10 +198,10 @@ class RealTimeCleaningWindow(QtWidgets.QDialog, Receiver):
         if cleaning_enabled:
             self._mark_cell_as_cleaned(self.cleaner_position.r, self.cleaner_position.c)
         else:
-            if self._cells[self.cleaner_position.r][self.cleaner_position.c] is CellType.TO_CLEAN:
+            if self.cell_types[self.cleaner_position.r][self.cleaner_position.c] is CellType.TO_CLEAN:
                 self._mark_cell_as_to_clean(self.cleaner_position.r, self.cleaner_position.c)
             else:
-                # self._cells[self.cleaner_position.r][self.cleaner_position.c] is CellType.ALREADY_CLEANED:
+                # self.cell_types[self.cleaner_position.r][self.cleaner_position.c] is CellType.ALREADY_CLEANED:
                 self._mark_cell_as_cleaned(self.cleaner_position.r, self.cleaner_position.c)
 
         # the new position of the cleaner is (r, c)
