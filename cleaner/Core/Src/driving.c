@@ -85,6 +85,8 @@ int start_drive(MapInfo* mapInfo,
 	if (!can_move_to_start_position)
 		return 3;
 	mapInfo->map[start_position.row][start_position.col] = ALREADY_CLEANED;
+	// send this command to mark the first cell as cleaned
+	send_new_cleaner_position_command(huart, start_position.row, start_position.col, true);
 
 	bool is_cleaning_ongoing = true;
 	while (is_cleaning_ongoing) {
@@ -106,7 +108,10 @@ int start_drive(MapInfo* mapInfo,
 				bool can_reach_next_cell = move_cleaner_to(mapInfo, obstacle_found, false, huart, lcd, motorsInfo, &cleanerInfo, &next_cell);
 				if (!can_reach_next_cell)
 					return 4;
+
 				mapInfo->map[next_cell.row][next_cell.col] = ALREADY_CLEANED;
+				// send this command to mark the first cell after reaching a far cell as cleaned
+				send_new_cleaner_position_command(huart, next_cell.row, next_cell.col, true);
 			}
 		}
 	}

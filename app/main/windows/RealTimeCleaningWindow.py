@@ -146,34 +146,31 @@ class RealTimeCleaningWindow(QtWidgets.QDialog, Receiver):
 
         QtCore.QThreadPool.globalInstance().start(worker)
 
-    def _color_cell(self, cell: QtWidgets.QFrame, color: str):
+    def _color_cell(self, r: int, c: int, color: str):
+        cell = self._cells[r][c]
         cell.setStyleSheet(f'background-color: {color}')
+        # if not self.cleaner_position == MapPosition(r, c):
 
     def _mark_cell_as_to_clean(self, r: int, c: int) -> None:
-        cell = self._cells[r][c]
-        self._color_cell(cell, '#9BF3FF')  # light blue
+        self._color_cell(r, c, '#9BF3FF')  # light blue
         # don't need to change the cell type because no cell can change type to "to clean"
 
     def _mark_cell_as_cleaned(self, r: int, c: int) -> None:
-        cell = self._cells[r][c]
-        self._color_cell(cell, '#00E661')  # green
+        self._color_cell(r, c, '#00E661')  # green
         self.cell_types[r][c] = CellType.ALREADY_CLEANED
 
     def _mark_cell_as_unavailable(self, r: int, c: int) -> None:
-        cell = self._cells[r][c]
-        self._color_cell(cell, '#F5F5F5')  # grey
+        self._color_cell(r, c, '#F5F5F5')  # grey
         # don't need to change the cell type because an unavailable cell remains unavailable
 
     def _mark_cell_as_cleaner_position(self, r: int, c: int) -> None:
         # the cleaner position is stored locally, there is no CLEANER_POSITION type. This
         # is done to keep the previous state of a cell before the cleaner moves to it
-        cell = self._cells[r][c]
-        self._color_cell(cell, 'black')
+        self._color_cell(r, c, 'black')
         self.cleaner_position = MapPosition(r, c)
 
     def mark_position_as_obstacle(self, r: int, c: int) -> None:
-        cell = self._cells[r][c]
-        self._color_cell(cell, 'red')
+        self._color_cell(r, c, 'red')
         self.cell_types[r][c] = CellType.UNAVAILABLE
 
     def _initialize_grid(self):
@@ -196,13 +193,17 @@ class RealTimeCleaningWindow(QtWidgets.QDialog, Receiver):
     def move_cleaner(self, r: int, c: int, cleaning_enabled: bool) -> None:
         # the current position is cleaned if cleaning_enabled
         if cleaning_enabled:
+            self._mark_cell_as_cleaned(r, c)
+        if self.cell_types[self.cleaner_position.r][self.cleaner_position.c] is CellType.ALREADY_CLEANED:
             self._mark_cell_as_cleaned(self.cleaner_position.r, self.cleaner_position.c)
         else:
-            if self.cell_types[self.cleaner_position.r][self.cleaner_position.c] is CellType.TO_CLEAN:
-                self._mark_cell_as_to_clean(self.cleaner_position.r, self.cleaner_position.c)
-            else:
-                # self.cell_types[self.cleaner_position.r][self.cleaner_position.c] is CellType.ALREADY_CLEANED:
-                self._mark_cell_as_cleaned(self.cleaner_position.r, self.cleaner_position.c)
+            self._mark_cell_as_to_clean(self.cleaner_position.r, self.cleaner_position.c)
+        # else:
+        #     if self.cell_types[self.cleaner_position.r][self.cleaner_position.c] is CellType.TO_CLEAN:
+        #         self._mark_cell_as_to_clean(self.cleaner_position.r, self.cleaner_position.c)
+        #     else:
+        #         # self.cell_types[self.cleaner_position.r][self.cleaner_position.c] is CellType.ALREADY_CLEANED:
+        #         self._mark_cell_as_cleaned(self.cleaner_position.r, self.cleaner_position.c)
 
         # the new position of the cleaner is (r, c)
         self._mark_cell_as_cleaner_position(r, c)
