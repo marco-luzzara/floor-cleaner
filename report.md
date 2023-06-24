@@ -15,7 +15,7 @@ The project root folder contains:
 
 The Desktop application has been developped in Python with the support of PyQT6 for the graphical interface.
 
-### Map Representation
+### Map Drawing
 The map is represented by a grid of cells, each of these cover an area of 5cm * 5cm. There are 3 types of cells:
 
 - UNAVAILABLE (grey in the grid): the cleaner should not go through it
@@ -55,7 +55,7 @@ The 0x02 value does not exist yet but corresponds to the ALREADY_CLEANED value.
 
 ### Sending Protocol
 
-In order for the map to be correctly interpreted by the Nucleo board, data are transmitted using a simple but quite efficient protocol. These are, in order, the sent bytes:
+In order for the map to be correctly interpreted by the Nucleo board, data are transmitted as bytes in the following order:
 
 1. The character `&`, which represents the start (and the end) of the data flow
 2. The number of rows in the map
@@ -65,6 +65,10 @@ In order for the map to be correctly interpreted by the Nucleo board, data are t
 6. The map's cells, row by row from left to right
 7. The character `&`
 
+### Realtime Cleaning Window
+
+Once the map has been sent, a new window opens, showing the drawn map. This map cannot be updated by the user, but is updated automatically by the messages that receives from the cleaner. After the user starts the cleaner, the latter will start sending messages about the new positions or obstacles on its way. See below for the messages format.
+
 ---
 
 ## Floor Cleaner
@@ -72,6 +76,9 @@ In order for the map to be correctly interpreted by the Nucleo board, data are t
 The cleaner will go through each to-clean cell in the received grid and avoids those that are marked as unavailable.
 
 ### Architecture and Components
+
+During the development of the project, the architecture have changed. The main reason was to accomodate the window for the realtime updates of the cleaner. 
+
 The architecture is described by this Fritzing schema:
 
 ![Architecture](./presentation/floor-cleaner/public/images/cleaner_architecture.png)
