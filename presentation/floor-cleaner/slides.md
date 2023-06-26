@@ -23,14 +23,14 @@ layout: cover
 
 ## Overview
 
-<div v-clicks>
+<v-clicks>
 
   - **What** 
     * A floor cleaner that cleans an area represented by a map, which is drawn in a Desktop App
   - **How**
     * Python App for the map drawing
     * The Nucleo-L053R8 controls the cleaner
-</div>
+</v-clicks>
 
 ---
 layout: image-right
@@ -39,9 +39,13 @@ image: ./images/app-create-map.png
 
 ## Python App (Map)
 
-- Each cell represents an area of about 5cm * 5cm 
-- A blue cell must be cleaned, a grey cell must not
+<v-clicks>
+
+- Each cell represents a small area that the cleaner can clean by just passing on it 
+- A blue cell must be cleaned, a grey cell (like a virtual wall)
 - The black cell represents the position of the cleaner
+
+</v-clicks>
 
 ---
 
@@ -75,7 +79,7 @@ image: ./images/app-create-map.png
 
 ## Python App (Map Sending)
 
-The Python app detects the Nucleo board, which is connected through USB, and can start to send the map:
+The Python app detects the Nucleo board, which is connected through USB, and starts sending the map:
 
 ```python {all|1|2|3-6|8-10|12|all}
 with serial.Serial(port=serial_data.device, baudrate=9600) as cleaner_serial:
@@ -94,7 +98,7 @@ with serial.Serial(port=serial_data.device, baudrate=9600) as cleaner_serial:
 
 ---
 
-## Cleaner Architecture
+## Cleaner Architecture (Version 1)
 
 <div class="flex gap-x-10">
 <div class="drawable-container">
@@ -128,18 +132,18 @@ with serial.Serial(port=serial_data.device, baudrate=9600) as cleaner_serial:
 
 ## Power Source
 
-<div class="grid grid-rows-1 grid-cols-3 centered-grid grid-flow-col gap-x-10">
+<div class="flex centered-flex gap-x-10">
 
-  <img v-show="[1, 2, 3].includes($slidev.nav.clicks)" src="/images/battery.png" class="w-25 h-50" />
+  <img v-show="[1, 2, 3].includes($slidev.nav.clicks)" src="/images/battery.png" class="w-20 h-40" />
 
   <div v-show="[2, 3].includes($slidev.nav.clicks)" class="flex centered-flex gap-x-10">
   <material-symbols-arrow-circle-right-rounded class="text-5xl" />
-  <img src="/images/l298n_schema.png" class="w-50 h-50" />
+  <img src="/images/l298n_schema.png" class="w-40 h-40" />
   </div>
 
   <div v-show="$slidev.nav.clicks === 3" class="flex centered-flex gap-x-10">
   <material-symbols-arrow-circle-right-rounded class="text-5xl" />
-  <img src="/images/board_schema.png" class="w-60 h-50" />
+  <img src="/images/board_schema.png" class="w-50 h-40" />
   </div>
 
 </div>
@@ -178,6 +182,92 @@ with serial.Serial(port=serial_data.device, baudrate=9600) as cleaner_serial:
 </v-clicks>
 
 </div>
+
+---
+
+## Distance Sensor
+
+<div class="flex gap-x-10">
+<div class="drawable-container">
+  <img src="/images/ir-distance-sensor.png" class="w-50 h-100" />
+
+  <EmptyCircle xcenter="20%" ycenter="80%" width="24%" height="20%" for="out" v-if="$slidev.nav.clicks === 1" />
+  <EmptyCircle xcenter="36%" ycenter="80%" width="24%" height="20%" for="gnd" v-if="$slidev.nav.clicks === 2" />
+  <EmptyCircle xcenter="51%" ycenter="80%" width="24%" height="20%" for="vcc" v-if="$slidev.nav.clicks === 3" />
+  <EmptyCircle xcenter="45%" ycenter="40%" width="45%" height="25%" for="potentiometer" v-if="$slidev.nav.clicks === 4" />
+  <EmptyCircle xcenter="15%" ycenter="-3%" width="78%" height="33%" for="ir" v-if="$slidev.nav.clicks === 5" />
+  
+</div>
+
+<v-clicks>
+
+- OUT
+- GND
+- 3.3V
+- Potentiometer
+- Infrared emitter/receiver
+
+</v-clicks>
+</div>
+
+---
+layout: image-right-fit
+image: ./images/cleaner_mounted_v1.png
+---
+
+## Cleaner Architecture (Issues and Limits)
+
+This cleaner architecture has some issues/limitations:
+
+<v-clicks>
+
+- The motors are not precise enough (optical encoders mitigated this issue)
+- 9V is a too low voltage to power source the entire circuit. The original battery was 14V.
+- **Limited communication with the Desktop Application**
+
+</v-clicks>
+
+---
+
+## Cleaner Architecture (Version 2)
+
+<div class="flex gap-x-10">
+<div class="drawable-container">
+  <img src="/images/cleaner_architecture_v2.png" class="w-140 h-100" />
+
+  <EmptyCircle xcenter="-3%" ycenter="14%" width="24%" height="16%" for="distance-sensor" v-if="$slidev.nav.clicks === 1" />
+  <EmptyCircle xcenter="43%" ycenter="15%" width="10%" height="15%" for="vacuum" v-if="$slidev.nav.clicks === 2" />
+  <EmptyCircle xcenter="27%" ycenter="17%" width="17%" height="20%" for="left-wheel" v-if="$slidev.nav.clicks === 3" />
+  <EmptyCircle xcenter="27%" ycenter="4%" width="17%" height="20%" for="right-wheel" v-if="$slidev.nav.clicks === 4" />
+  <EmptyCircle xcenter="52.5%" ycenter="18%" width="9%" height="13%" for="buzzer" v-if="$slidev.nav.clicks === 5" />
+  <EmptyCircle xcenter="43%" ycenter="-3%" width="45%" height="25%" for="lcd" v-if="$slidev.nav.clicks === 6" />
+  
+</div>
+
+<v-clicks>
+
+  - Distance Sensor
+  - Vacuum
+  - Left wheel
+  - Right wheel
+  - Buzzer
+  - LCD Display
+
+</v-clicks>
+
+</div>
+
+---
+
+## LCD Display
+
+<v-clicks>
+
+- It is a 1602A LCD display, that I have set on 4-bit mode
+- The potentiometer is used to adjust the screen brightness
+- It shows the cleaner's actions or informational messages
+
+</v-clicks>
 
 ---
 
@@ -233,7 +323,7 @@ flowchart TB
 
 <div class="grid centered-grid grid-rows-2 grid-cols-2 gap-x-20">
 
-<div id="path" class="grid grid-rows-3 grid-cols-4">
+<div class="path grid grid-rows-3 grid-cols-4">
   <Cell from="right" />
   <Cell from="left" to="right" />
   <Cell from="left" to="right" />
@@ -248,7 +338,7 @@ flowchart TB
   <Cell from="up" to="left" />
 </div>
 
-<div id="path" class="grid grid-rows-3 grid-cols-4">
+<div class="path grid grid-rows-3 grid-cols-4">
   <Cell from="down" />
   <Cell invisible="true" />
   <Cell from="down" to="right" />
@@ -269,7 +359,7 @@ flowchart TB
 </div>
 
 <style>
-  #path {
+  .path {
     width: 12em;
     height: 9em;
   }
@@ -279,62 +369,82 @@ flowchart TB
 
 ## Cleaning Algorithm (Non-adjacent Cell Search)
 
-<div class="grid centered-grid grid-rows-2 grid-cols-2 gap-x-20">
+<div class="flex centered-flex">
 
-<div id="search" class="grid grid-rows-3 grid-cols-4">
-  <Cell centerContent="X" />
+<div id="path_complex" class="grid grid-rows-3 grid-cols-5">
+  <Cell color="#9BF3FF" />
   <Cell invisible="true" />
-  <Cell centerContent="X" />
-  <Cell centerContent="X" />
-  <Cell centerContent="X" />
-  <Cell centerContent="X" />
-  <Cell centerContent="X" />
-  <Cell centerContent="C" />
+  <Cell color="#9BF3FF" textColor="black" centerContent="1" />
+  <Cell color="#9BF3FF" textColor="black" centerContent="2"/>
+  <Cell isDashed="true" centerContent="3"/>
+  <Cell color="#9BF3FF" />
+  <Cell color="#9BF3FF" />
+  <Cell color="#9BF3FF" />
+  <Cell color="#9BF3FF" textColor="black" centerContent="C" />
+  <Cell isDashed="true" centerContent="4"/>
   <Cell />
   <Cell />
-  <Cell centerContent="N" />
+  <Cell centerContent="7"/>
+  <Cell isDashed="true" centerContent="6"/>
+  <Cell isDashed="true" centerContent="5"/>
 </div>
 
-```
-┌---┬---┬---┬---┬---┐
-| 9 | 10| 11| 12| 13|
-├---┼---┼---┼---┼---┤
-|   | 1 | 2 | 3 | 14|
-├---┼───┼───┼---┼---┤
-|   │ 8 │ C │ 4 | 15|
-├───┼───┼───┼---┼---┤
-│   │ 7 │ 6 | 5 | 16|
-├───┼───┼---┼---┼---┤
-│   │ 20│ 19| 18| 17|
-└───┴───┴---┴---┴---┘
-```
-
-<div id="search" class="grid grid-rows-5 grid-cols-5">
-  <Cell isDashed="true" centerContent="X" />
-  <Cell invisible="true" />
-  <Cell centerContent="X" />
-  <Cell centerContent="X" />
-  <Cell centerContent="X" />
-  <Cell centerContent="X" />
-  <Cell centerContent="X" />
-  <Cell centerContent="?" />
-  <Cell />
-  <Cell />
-  <Cell centerContent="N🞋" />
 </div>
 
-**C** is the cleaner position, while **X** represents all the already-cleaned cells
+<v-clicks>
 
-</div>
+- **C** is the cleaner position
+- light blue cells have already been cleaned
+- The search order is defined by the squares of edge 3, 5, 7 etc that enclose the current cell
+- The target cell is the first non-cleaned cell found
+
+</v-clicks>
 
 <style>
-  #path {
-    width: 12em;
+  #path_complex {
+    width: 15em;
     height: 9em;
   }
-
-  #search {
-    width: 8em;
-    height: 8em;
-  }
 </style>
+
+---
+
+## Moving to the Non-adjacent Cell
+
+<v-clicks>
+
+- The path to the target cell is created by the [A* Algorithm](https://github.com/BigZaphod/AStar)
+- During the time from the current to the target cell, the cleaner will not clean
+
+</v-clicks>
+
+---
+
+## Realtime Updates
+
+The cleaner, once started, sends update messages to the Desktop Application. These messages are used to show the cleaning status.
+
+The messages are:
+
+<v-clicks>
+
+- `START{}`
+- `MOVE{'r':1,'c':2,'cleaning_enabled':true}`
+- `OBSTACLE{'r':1,'c':2}`
+- `END{'ret_code':0}`
+
+</v-clicks>
+
+---
+
+## Testing
+
+The cleaning algorithm has been tested independently using a different configuration:
+
+<v-clicks>
+
+- The entry point is `Src/tests/driving_test.c`, compiled with a custom `Makefile`
+- The `TESTING` macro is enabled and hides all the MCU-specific code (including the obstacle detection logic)
+- I have used `min_unit.h` as testing library
+
+</v-clicks>

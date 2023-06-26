@@ -77,9 +77,9 @@ The cleaner will go through each to-clean cell in the received grid and avoids t
 
 ### Architecture and Components
 
-During the development of the project, the architecture have changed. The main reason was to accomodate the window for the realtime updates of the cleaner. 
+During the development of the project, the architecture have changed. The main reason was to accomodate the window for the realtime updates of the cleaner.
 
-The architecture is described by this Fritzing schema:
+The first architecture included the motors (wheels) and was externally power-sourced. It is described by this Fritzing schema:
 
 ![Architecture](./presentation/floor-cleaner/public/images/cleaner_architecture.png)
 
@@ -124,6 +124,24 @@ A buzzer informs the user about the cleaner's state:
 - A single beep of 500ms: the cleaner is ready to receive a new map (and has successfully cleaned the previous map is present).
 - 2 beeps of 500ms, interspersed by a beep of 300ms: the cleaner has received the map and is ready to drive
 - 3 beeps of 300ms, interspersed by 2 beeps of 150ms: the cleaner has received an error while driving
+
+---
+
+### The Second Architecture 
+
+The first architecture has some issues:
+
+- The motors were not precise enough and a wheel could spin faster than the other. The motors were recycled from an old cleaner and each of them have a optical encoder mounted on it. I did not use it but it would have definitely improved the speed synchronization.
+- 9V is probably too low to power-source the entire cleaner, the original battery was 14V.
+- The window for realtime update was not possible because the cleaner moves freely and cannot be attached to the USB cable.
+
+The second architecture is conceptually very similar to the previous one because the only difference is that it is power-sourced directly from the USB and the L298N connections have been replaced with LEDs. The only additional component is a LCD display that shows informational messages.
+
+![Architecture v2](./presentation/floor-cleaner/public/images/cleaner_architecture_v2.png)
+
+#### LCD Display
+
+The LCD display is a 1602A LCD, that I have set on 4-bit mode. I have also used a potentiometer to adjust the screen brightness.
 
 ---
 
@@ -397,6 +415,19 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 ```
 
 This interrupt is enabled when the `drive_forward` method is called and disabled at the end of it. Afterall, the obstacle sensor is useful only when the cleaner moves in the current direction, not even when it turns left or right because its position does not change.
+
+---
+
+### Realtime Updates
+
+After the map has been sent and the cleaner starts, each new position and obstacle found in the cleaner's way are communicated to the Desktop application using the serial interface. 4 types of messages will be sent:
+
+- `START{}`: it is the first message the cleaner sends and indicates that the cleaner started cleaning
+- `MOVE{'r':1,'c':2,'cleaning_enabled':true}`: it is sent when the cleaner moves to a new cell. This command has 3 parameters: the row and column of the new cell and `cleaning_enabled`, that specifies whether it is currently cleaning. The cleaner will not clean cells where it has already cleaned.
+- `OBSTACLE{'r':1,'c':2}`: it is sent when a cleaner encounters an obstacle, the parameters are the obstacle position
+- `END{'ret_code':0}`: it is the last message to be sent and also specifies the return code (0 if the cleaning was successful, > 0 otherwise).
+
+Depending on the message received, the Desktop application updates the realtime map. In particular, the cleaned cells get colored of green, while obstacles get colored of red.
 
 ---
 

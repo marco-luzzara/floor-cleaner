@@ -421,7 +421,12 @@ static bool drive_forward(CleanerInfo* cleanerInfo,
 	bool was_target_reached;
 
 #ifndef __TESTING__
-	// enable the interrupt for the obstacle detection
+	// enable the interrupt for the obstacle detection, but first clear the pending bit
+	// TODO: defective behavior, the interrupt is sometimes invoked twice
+	// sources: https://community.st.com/t5/stm32-mcu-products/hal-gpio-exti-clear-flag-vs-hal-gpio-exti-clear-it/m-p/330116
+	HAL_NVIC_ClearPendingIRQ(EXTI4_15_IRQn);
+	__HAL_GPIO_EXTI_CLEAR_IT(EXTI4_15_IRQn);
+	__HAL_GPIO_EXTI_CLEAR_FLAG(EXTI4_15_IRQn);
 	HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 
 	// modified from HAL_Delay(Delay)

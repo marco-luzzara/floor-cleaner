@@ -4,6 +4,8 @@ type LineDirections = "up" | "right" | "down" | "left"
 export interface Props {
     from?: LineDirections,
     to?: LineDirections,
+    textColor?: string,
+    color?: string,
     invisible?: boolean
     isDashed?: boolean
     centerContent?: string
@@ -16,32 +18,40 @@ const props = withDefaults(defineProps<Props>(), {
 </script>
 
 <template>
-    <div v-bind:class="{ cell: !invisible && !isDashed, 'dashed-cell': !invisible && isDashed }">
+    <div class="cell" v-bind:class="{ 'full-cell': !invisible && !isDashed, 'dashed-cell': !invisible && isDashed }">
         <hr class="line up-line" v-if="from === 'up' || to === 'up'" />
         <hr class="line right-line" v-if="from === 'right' || to === 'right'" />
         <hr class="line down-line" v-if="from === 'down' || to === 'down'" />
         <hr class="line left-line" v-if="from === 'left' || to === 'left'" />
         <div class="centerContent">
-            <b v-if="centerContent !== ''">{{ centerContent }}</b>
+            <b class="centerContentText" v-if="centerContent !== ''">{{ centerContent }}</b>
         </div>
     </div>
 </template>
 
 <style scoped>
 .centerContent {
-    width: 100%;
-    height: 100%;
-    text-align: center;
-    position: relative;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    position: absolute;
+}
+
+.centerContentText {
+    font-size: 1.5em;
+    color: v-bind('props.textColor');
 }
 
 .cell {
     position: relative;
+    background-color: v-bind('props.color');
+}
+
+.full-cell {
     border: 2px solid grey;
 }
 
 .dashed-cell {
-    position: relative;
     border: 2px dashed grey;
 }
 
@@ -53,13 +63,11 @@ const props = withDefaults(defineProps<Props>(), {
 .up-line {
     height: 50%;
     left: 50%;
-    right: 50%;
 }
 
 .right-line {
     width: 50%;
     top: 50%;
-    bottom: 50%;
     left: 50%;
 }
 
@@ -67,12 +75,10 @@ const props = withDefaults(defineProps<Props>(), {
     height: 50%;
     top: 50%;
     left: 50%;
-    right: 50%;
 }
 
 .left-line {
     width: 50%;
     top: 50%;
-    bottom: 50%;
 }
 </style>
