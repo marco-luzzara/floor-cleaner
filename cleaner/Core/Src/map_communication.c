@@ -75,22 +75,40 @@ void initialize_map(UART_HandleTypeDef *huart, MapInfo* mapInfo) {
  * cleaned cells
  */
 
-//static char dma_buffer[100];
+static char buf[100];
+static uint8_t last_command_size = 0;
 
 static void send_command(UART_HandleTypeDef *huart, const char* raw_command) {
+	if (last_command_size > 0) {
+		HAL_StatusTypeDef dmaCheck;
+		do {
+			dmaCheck = HAL_DMA_PollForTransfer(huart->hdmatx, HAL_DMA_FULL_TRANSFER, HAL_MAX_DELAY);
+		} // while(dmaCheck != HAL_OK || (dmaCheck == HAL_ERROR && huart->hdmatx->ErrorCode != HAL_DMA_ERROR_NO_XFER) || huart->hdmatx->State != HAL_DMA_STATE_READY);
+		while(huart->hdmatx->State != HAL_DMA_STATE_READY);
+	}
+
+//	HAL_StatusTypeDef dmaCheck;
+//	do {
+//		if (last_command_size == 0)
+//			break;
+//		dmaCheck = HAL_DMA_PollForTransfer(huart->hdmatx, last_command_size, HAL_MAX_DELAY);
+//	} while(dmaCheck != HAL_OK);
+
 	uint8_t current_command_size = strlen(raw_command);
-	uint8_t final_command_size = current_command_size + 1; // 1 is for the \n
-	char buf[final_command_size];
+	last_command_size = current_command_size + 1; // 1 is for the \n
+
 	memset(buf, 0, sizeof(buf));
 	strcat(buf, raw_command);
 	buf[current_command_size] = '\n';
 
 //	huart->Instance->CR3 |= USART_CR3_DMAT;
 //	while(HAL_UART_Transmit_DMA(huart, (uint8_t *) dma_buffer, final_command_size)!= HAL_OK);
+//	if (strncmp(raw_command, "START{}", 7) != 0)
+//		while(HAL_DMA_PollForTransfer(huart->hdmatx, HAL_DMA_FULL_TRANSFER, HAL_MAX_DELAY) != HAL_OK);
 //	HAL_DMA_PollForTransfer(huart->hdmatx, HAL_DMA_FULL_TRANSFER, HAL_MAX_DELAY);
 //	huart->Instance->CR3 &= ~USART_CR3_DMAT;
-//	while(HAL_UART_Transmit_DMA(huart, (uint8_t *) dma_buffer, final_command_size)!= HAL_OK);
-	HAL_UART_Transmit(huart, (uint8_t *) buf, final_command_size, HAL_MAX_DELAY);
+	HAL_UART_Transmit_DMA(huart, (uint8_t *) buf, last_command_size);
+//	HAL_UART_Transmit(huart, (uint8_t *) buf, final_command_size, HAL_MAX_DELAY);
 }
 
 void send_start_command(UART_HandleTypeDef *huart) {

@@ -2,8 +2,8 @@ map_communication.c:8:13:read_from_UART	24	static
 map_communication.c:15:13:read_char	32	static
 map_communication.c:26:12:read_number	40	static
 map_communication.c:42:6:initialize_map	56	static
-map_communication.c:80:13:send_command	72	dynamic
-map_communication.c:96:6:send_start_command	24	static
-map_communication.c:101:6:send_end_command	64	dynamic
-map_communication.c:109:6:send_new_cleaner_position_command	88	dynamic
-map_communication.c:118:6:send_obstacle_command	80	dynamic
+map_communication.c:81:13:send_command	32	static
+map_communication.c:114:6:send_start_command	24	static
+map_communication.c:119:6:send_end_command	64	dynamic
+map_communication.c:127:6:send_new_cleaner_position_command	88	dynamic
+map_communication.c:136:6:send_obstacle_command	80	dynamic

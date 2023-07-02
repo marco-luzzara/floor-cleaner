@@ -246,7 +246,7 @@ class RealTimeCleaningWindowWorker(QtCore.QRunnable):
                 raise InvalidExecutionException()
 
             # after the start command, I want to keep the data-read delay in check
-            realtime_serial.timeout = 10
+            # realtime_serial.timeout = 10
 
             command = self._read_command(realtime_serial)
             while not isinstance(command, EndCommand):
