@@ -1,7 +1,7 @@
 map_communication.c:26:12:read_number	40	static
-map_communication.c:81:13:send_command	24	static
+map_communication.c:80:13:send_command	24	static
 map_communication.c:42:6:initialize_map	48	static
-map_communication.c:114:6:send_start_command	8	static
-map_communication.c:119:6:send_end_command	48	static
-map_communication.c:127:6:send_new_cleaner_position_command	96	static
-map_communication.c:136:6:send_obstacle_command	80	static
+map_communication.c:96:6:send_start_command	8	static
+map_communication.c:101:6:send_end_command	48	static
+map_communication.c:109:6:send_new_cleaner_position_command	96	static
+map_communication.c:118:6:send_obstacle_command	80	static
