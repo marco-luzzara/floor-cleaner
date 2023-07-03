@@ -42,7 +42,7 @@ image: ./images/app-create-map.png
 <v-clicks>
 
 - Each cell represents a small area that the cleaner can clean by just passing on it 
-- A blue cell must be cleaned, a grey cell (like a virtual wall)
+- A blue cell must be cleaned, a grey cell is like a virtual wall
 - The black cell represents the position of the cleaner
 
 </v-clicks>
@@ -420,6 +420,108 @@ flowchart TB
 
 ---
 
+## Cleaner Movements (#1)
+
+While driving forward, the cleaner checks for obstacles:
+
+```c {all|1-3|5|8,9|11-21|23,24|all}
+*obstacle_found = false;
+bool undo_drive = false;
+bool was_target_reached;
+
+HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+
+// modified from HAL_Delay(Delay)
+HAL_GPIO_WritePin(motorsInfo->left2_GPIOType, motorsInfo->left2_pin, GPIO_PIN_SET); // ACW
+HAL_GPIO_WritePin(motorsInfo->right1_GPIOType, motorsInfo->right1_pin, GPIO_PIN_SET); // CW
+
+uint32_t tickstart = HAL_GetTick();
+uint32_t wait = millis_to_drive;
+uint32_t undo_delay;
+
+while((undo_delay = HAL_GetTick() - tickstart) < wait)
+{
+  if (*obstacle_found) {
+    undo_drive = true;
+    break;
+  }
+}
+
+HAL_GPIO_WritePin(motorsInfo->left2_GPIOType, motorsInfo->left2_pin, GPIO_PIN_RESET);
+HAL_GPIO_WritePin(motorsInfo->right1_GPIOType, motorsInfo->right1_pin, GPIO_PIN_RESET);
+
+// ...
+```
+
+<style> 
+  .slidev-layout {
+    --slidev-code-font-size: 0.6rem;
+    --slidev-code-line-height: calc(0.6rem * 1.5); 
+  }
+</style> 
+
+---
+
+## Cleaner Movements (#2)
+
+```c{all|2|3-11|12-25|28|all}
+MapPosition next_position;
+get_next_position_while_driving_forward(cleanerInfo, &next_position);
+if (!undo_drive) {
+  cleanerInfo->position.row = next_position.row;
+  cleanerInfo->position.col = next_position.col;
+
+  was_target_reached = true;
+
+  send_new_cleaner_position_command(huart, cleanerInfo->position.row, cleanerInfo->position.col, cleaning_enabled);
+  Lcd_clear_and_write(lcd, "Going forward");
+}
+else {
+  // drive backward because of obstacle
+  HAL_GPIO_WritePin(motorsInfo->left1_GPIOType, motorsInfo->left1_pin, GPIO_PIN_SET); // CW
+  HAL_GPIO_WritePin(motorsInfo->right2_GPIOType, motorsInfo->right2_pin, GPIO_PIN_SET); // ACW
+
+  HAL_Delay(undo_delay);
+
+  HAL_GPIO_WritePin(motorsInfo->left1_GPIOType, motorsInfo->left1_pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(motorsInfo->right2_GPIOType, motorsInfo->right2_pin, GPIO_PIN_RESET);
+
+  send_obstacle_command(huart, next_position.row, next_position.col);
+  Lcd_clear_and_write(lcd, "Obstacle found");
+
+  was_target_reached = false;
+}
+
+HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
+return was_target_reached;
+```
+
+<style> 
+  .slidev-layout {
+    --slidev-code-font-size: 0.6rem;
+    --slidev-code-line-height: calc(0.6rem * 1.5); 
+  }
+</style> 
+
+---
+
+## Distance Sensor
+
+If an obstacle is detected, the interrupt is disabled until the next `drive_forward` command
+
+```c{all|5,6|all}
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if(GPIO_Pin == GPIO_PIN_9 && is_driving) // If The INT Source Is EXTI Line9 (A9 Pin)
+	{
+		HAL_NVIC_DisableIRQ(EXTI4_15_IRQn);
+		is_obstacle_found = true;
+	}
+}
+```
+
+---
+
 ## Realtime Updates
 
 The cleaner, once started, sends update messages to the Desktop Application. These messages are used to show the cleaning status.
@@ -435,15 +537,24 @@ The messages are:
 
 </v-clicks>
 
-<div v-click="5">
+---
+
+## Updates Transmission
 
 Every message is sent asynchronously with the DMA:
 
-```c
-HAL_UART_Transmit_DMA(huart, (uint8_t *) buf, command_size);
-```
+```c{all|1|8|10|all}
+while (__HAL_UART_GET_FLAG(huart, UART_FLAG_TC) != SET);
 
-</div>
+uint8_t current_command_size = strlen(raw_command);
+uint8_t final_command_size = current_command_size + 1; // 1 is for the \n
+
+memset(buf, 0, sizeof(buf));
+strcat(buf, raw_command);
+buf[current_command_size] = '\n';
+
+HAL_UART_Transmit_DMA(huart, (uint8_t *) buf, final_command_size);
+```
 
 ---
 
