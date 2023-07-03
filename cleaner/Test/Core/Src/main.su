@@ -2,7 +2,7 @@ main.c:56:13:set_buzzer	16	static
 main.c:62:13:signal_cleaner_ready_for_map_receiving	8	static
 main.c:66:13:signal_map_received	8	static
 main.c:72:13:signal_cleaner_error	8	static
-main.c:104:5:main	200	static
+main.c:105:5:main	176	static
 main.c:223:6:SystemClock_Config	128	static
 main.c:270:13:MX_TIM2_Init	32	static
 main.c:324:13:MX_USART2_UART_Init	8	static

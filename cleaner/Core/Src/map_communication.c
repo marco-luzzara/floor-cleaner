@@ -78,10 +78,7 @@ void initialize_map(UART_HandleTypeDef *huart, MapInfo* mapInfo) {
 static char buf[100];
 
 static void send_command(UART_HandleTypeDef *huart, const char* raw_command) {
-	if (huart->hdmatx->State == HAL_DMA_STATE_BUSY) {
-		while(huart->hdmatx->State != HAL_DMA_STATE_READY)
-			HAL_DMA_PollForTransfer(huart->hdmatx, HAL_DMA_FULL_TRANSFER, HAL_MAX_DELAY);
-	}
+	while (__HAL_UART_GET_FLAG(huart, UART_FLAG_TC) != SET);
 
 	uint8_t current_command_size = strlen(raw_command);
 	uint8_t final_command_size = current_command_size + 1; // 1 is for the \n

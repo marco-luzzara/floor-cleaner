@@ -92,6 +92,7 @@ static void MX_TIM2_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+Lcd_HandleTypeDef lcd;
 bool is_obstacle_found = false;
 bool is_driving = false;
 
@@ -135,7 +136,6 @@ int main(void)
 	Lcd_PortType lcd_ports[] = { D4_GPIO_Port, D5_GPIO_Port, D6_GPIO_Port, D7_GPIO_Port };
 	// Lcd_PinType pins[] = {D4_Pin, D5_Pin, D6_Pin, D7_Pin};
 	Lcd_PinType lcd_pins[] = { D4_Pin, D5_Pin, D6_Pin, D7_Pin };
-	Lcd_HandleTypeDef lcd;
 	// Lcd_create(ports, pins, RS_GPIO_Port, RS_Pin, EN_GPIO_Port, EN_Pin, LCD_4_BIT_MODE);
 	lcd = Lcd_create(lcd_ports, lcd_pins, RS_GPIO_Port, RS_Pin, E_GPIO_Port, E_Pin, LCD_4_BIT_MODE);
 
@@ -409,7 +409,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin : DISTANCE_SENSOR_Pin */
   GPIO_InitStruct.Pin = DISTANCE_SENSOR_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(DISTANCE_SENSOR_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : VACUUM_Pin BUZZER_Pin */

@@ -3,7 +3,7 @@ map_communication.c:15:13:read_char	32	static
 map_communication.c:26:12:read_number	40	static
 map_communication.c:42:6:initialize_map	56	static
 map_communication.c:80:13:send_command	32	static
-map_communication.c:96:6:send_start_command	24	static
-map_communication.c:101:6:send_end_command	64	dynamic
-map_communication.c:109:6:send_new_cleaner_position_command	88	dynamic
-map_communication.c:118:6:send_obstacle_command	80	dynamic
+map_communication.c:93:6:send_start_command	24	static
+map_communication.c:98:6:send_end_command	64	dynamic
+map_communication.c:106:6:send_new_cleaner_position_command	88	dynamic
+map_communication.c:115:6:send_obstacle_command	80	dynamic

@@ -435,6 +435,16 @@ The messages are:
 
 </v-clicks>
 
+<div v-click="5">
+
+Every message is sent asynchronously with the DMA:
+
+```c
+HAL_UART_Transmit_DMA(huart, (uint8_t *) buf, command_size);
+```
+
+</div>
+
 ---
 
 ## Testing
